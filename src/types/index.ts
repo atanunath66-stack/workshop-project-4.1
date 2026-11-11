@@ -12,6 +12,7 @@ export interface User {
   restaurantId?: string; // If owner
   dietaryPreference?: 'all' | 'veg' | 'non-veg' | 'vegan';
   defaultAddress?: string;
+  preferredLocation?: UserPreferredLocation;
 }
 
 export type FoodCategory =
@@ -62,6 +63,33 @@ export type RestaurantStatus =
   | 'suspended'
   | 'rejected';
 
+export interface RestaurantLocation {
+  address: string;
+  locality: string;
+  city: string;
+  district: string;
+  state: string;
+  country: string;
+  pincode: string;
+  latitude: number;
+  longitude: number;
+  placeId: string;
+  formattedAddress: string;
+  geocodingProvider: 'Google Maps' | 'Browser Geolocation' | 'GPS Verified';
+  locationVerified: boolean;
+  updatedAt: string;
+}
+
+export interface UserPreferredLocation {
+  address: string;
+  locality: string;
+  city: string;
+  latitude: number;
+  longitude: number;
+  placeId?: string;
+  radiusKm?: number;
+}
+
 export interface Restaurant {
   id: string;
   name: string;
@@ -76,6 +104,7 @@ export interface Restaurant {
   city: string;
   lat: number;
   lng: number;
+  location?: RestaurantLocation;
   coverImage: string;
   galleryImages: string[];
   categories: FoodCategory[];
@@ -96,6 +125,11 @@ export interface Restaurant {
   rejectionReason?: string;
   ownerPhone?: string;
   createdAt: string;
+  updatedAt?: string;
+  approvedAt?: string;
+  approvedBy?: string;
+  rejectedAt?: string;
+  rejectedBy?: string;
 }
 
 export type BookingStatus =

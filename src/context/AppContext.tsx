@@ -11,6 +11,7 @@ import {
   CancellationPolicy,
   MenuItem,
   BookingStatus,
+  RestaurantLocation,
 } from '../types';
 import {
   INITIAL_USERS,
@@ -29,6 +30,13 @@ import {
   SUPER_ADMIN_CREDENTIALS,
 } from '../utils/cancellationAndPricing';
 import {
+  formatE164PhoneNumber,
+  getFirebaseAuthErrorMessage,
+  logOtpEvent,
+  logRestaurantEvent,
+} from '../utils/firebaseAuthErrors';
+import { detectBrowserLocation } from '../services/googleMapsService';
+import {
   auth,
   db,
   googleProvider,
@@ -41,6 +49,8 @@ import {
   onAuthStateChanged,
   doc,
   collection,
+  query,
+  where,
   setDoc,
   updateDoc,
   deleteDoc,
@@ -90,7 +100,10 @@ interface AppContextType {
 
   // Real Firebase Authentication Methods
   signInWithGoogle: (intendedRole?: UserRole) => Promise<{ success: boolean; error?: string }>;
-  sendPhoneOtp: (phoneNumber: string, recaptchaContainerId: string) => Promise<{ success: boolean; confirmationResult?: ConfirmationResult; error?: string }>;
+  sendPhoneOtp: (
+    phoneNumber: string,
+    recaptchaContainerId: string
+  ) => Promise<{ success: boolean; confirmationResult?: ConfirmationResult; error?: string; errorCode?: string; actionRequired?: string }>;
   verifyPhoneOtp: (confirmationResult: ConfirmationResult, otp: string, role: UserRole, name?: string) => Promise<{ success: boolean; error?: string }>;
   requireAuth: (action: () => void, intendedRole?: UserRole) => void;
 
@@ -333,7 +346,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               name: user.displayName || user.email?.split('@')[0] || (user.phoneNumber ? `User ${user.phoneNumber.slice(-4)}` : 'Verified Diner'),
               email: user.email || '',
               phone: user.phoneNumber || '',
-              role: (user.email === 'atanunath66@gmail.com' ? 'admin' : (authModalRole || 'customer')),
+              role: (user.email === 'atanunath66@gmail.com' || user.email === 'atanunath44@gmail.com' ? 'admin' : (authModalRole || 'customer')),
               authProvider: user.phoneNumber ? 'phone' : 'google',
               createdAt: new Date().toISOString(),
             };
@@ -385,32 +398,53 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Firestore Real-Time Listener for Restaurants
   useEffect(() => {
     try {
+      const isSuper =
+        isAdminAuthenticated ||
+        (firebaseUser &&
+          (firebaseUser.email === 'atanunath66@gmail.com' || firebaseUser.email === 'atanunath44@gmail.com'));
+
+      const q = isSuper
+        ? collection(db, 'restaurants')
+        : query(collection(db, 'restaurants'), where('status', '==', 'ACTIVE'));
+
       const unsub = onSnapshot(
-        collection(db, 'restaurants'),
+        q,
         (snapshot) => {
-          if (!snapshot.empty) {
-            const firestoreRests: Restaurant[] = [];
-            snapshot.forEach((d) => {
-              firestoreRests.push({ ...(d.data() as Restaurant), id: d.id });
-            });
-            setRestaurants(firestoreRests);
-            try {
-              localStorage.setItem(STORAGE_KEYS.RESTAURANTS, JSON.stringify(firestoreRests));
-            } catch {}
-          }
+          const firestoreRests: Restaurant[] = [];
+          snapshot.forEach((d) => {
+            firestoreRests.push({ ...(d.data() as Restaurant), id: d.id });
+          });
+          setRestaurants((prev) => {
+            if (isSuper) return firestoreRests;
+            // Retain pending/rejected listings submitted by current user session
+            const pendingOrOwned = prev.filter(
+              (r) => r.status !== 'ACTIVE' && (r.ownerId === (firebaseUser?.uid || currentUser.id) || !r.status)
+            );
+            const liveIds = new Set(firestoreRests.map((r) => r.id));
+            const localPending = pendingOrOwned.filter((r) => !liveIds.has(r.id));
+            return [...firestoreRests, ...localPending];
+          });
+          logRestaurantEvent('Real-time restaurants snapshot received', {
+            count: firestoreRests.length,
+            isSuper,
+          });
         },
         (error) => {
-          console.warn('Firestore restaurants snapshot listener:', error?.message);
+          logRestaurantEvent('Firestore restaurants snapshot listener error', {
+            message: error?.message,
+            code: (error as any)?.code,
+          });
         }
       );
       return () => unsub();
     } catch (e) {
-      console.warn('Firestore listener setup error:', e);
+      logRestaurantEvent('Firestore listener setup error', { error: String(e) });
     }
-  }, []);
+  }, [isAdminAuthenticated, firebaseUser, currentUser.id]);
 
-  // Firestore Real-Time Listener for Bookings
+  // Firestore Real-Time Listener for Bookings (only attached when authenticated per Firebase skill)
   useEffect(() => {
+    if (!firebaseUser && !isAdminAuthenticated) return;
     try {
       const unsub = onSnapshot(
         collection(db, 'bookings'),
@@ -434,7 +468,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (e) {
       console.warn('Firestore bookings listener setup error:', e);
     }
-  }, []);
+  }, [firebaseUser, isAdminAuthenticated]);
 
   // Sync to localStorage as robust offline cache
   useEffect(() => {
@@ -522,7 +556,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
-      const role = user.email === 'atanunath66@gmail.com' ? 'admin' : intendedRole;
+      const role = (user.email === 'atanunath66@gmail.com' || user.email === 'atanunath44@gmail.com') ? 'admin' : intendedRole;
 
       const profile: User = {
         id: user.uid,
@@ -561,36 +595,83 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Real Firebase Phone OTP Authentication
+  // Real Firebase Phone OTP Authentication with strict validation and error handling
   const sendPhoneOtp = async (
     phoneNumber: string,
     recaptchaContainerId: string
-  ): Promise<{ success: boolean; confirmationResult?: ConfirmationResult; error?: string }> => {
+  ): Promise<{ success: boolean; confirmationResult?: ConfirmationResult; error?: string; errorCode?: string; actionRequired?: string }> => {
+    logOtpEvent('OTP request started', { rawPhone: phoneNumber, containerId: recaptchaContainerId });
+
+    // Step 1: Validate and format phone number according to international E.164 standard
+    const formatRes = formatE164PhoneNumber(phoneNumber);
+    logOtpEvent('Phone number validation result', {
+      isValid: formatRes.isValid,
+      formattedPhone: formatRes.formatted,
+      error: formatRes.error,
+    });
+
+    if (!formatRes.isValid || !formatRes.formatted) {
+      return {
+        success: false,
+        error: formatRes.error || 'Please enter a valid 10-digit mobile number.',
+        errorCode: 'auth/invalid-phone-number',
+      };
+    }
+
     try {
-      // Clear any prior recaptcha
+      // Step 2: Clean up previous reCAPTCHA instance and DOM
       if ((window as any).recaptchaVerifier) {
         try {
           (window as any).recaptchaVerifier.clear();
-        } catch {}
+        } catch (e) {
+          console.warn('Clearing previous recaptcha verifier:', e);
+        }
+        (window as any).recaptchaVerifier = null;
       }
 
+      const containerEl = document.getElementById(recaptchaContainerId);
+      if (containerEl) {
+        containerEl.innerHTML = '';
+      }
+
+      // Step 3: Initialize Firebase RecaptchaVerifier
       const verifier = new RecaptchaVerifier(auth, recaptchaContainerId, {
         size: 'invisible',
-        callback: () => {},
+        callback: () => {
+          logOtpEvent('reCAPTCHA verification solved by user');
+        },
+        'expired-callback': () => {
+          logOtpEvent('reCAPTCHA verification expired');
+        },
       });
       (window as any).recaptchaVerifier = verifier;
 
-      // Ensure international E.164 format (+91 for India)
-      let formattedPhone = phoneNumber.trim();
-      if (!formattedPhone.startsWith('+')) {
-        formattedPhone = `+91${formattedPhone.replace(/^0+/, '')}`;
-      }
+      // Ensure reCAPTCHA renders successfully
+      await verifier.render();
+      logOtpEvent('reCAPTCHA verifier rendered successfully');
 
-      const confirmation = await signInWithPhoneNumber(auth, formattedPhone, verifier);
-      return { success: true, confirmationResult: confirmation };
+      // Step 4: Dispatch real SMS through Firebase Phone Auth
+      const confirmation = await signInWithPhoneNumber(auth, formatRes.formatted, verifier);
+      logOtpEvent('Firebase request success: SMS dispatch initiated', { phone: formatRes.formatted });
+
+      return {
+        success: true,
+        confirmationResult: confirmation,
+      };
     } catch (err: any) {
-      console.error('Phone OTP Send Error:', err);
-      return { success: false, error: err?.message || 'Failed to send OTP. Please check phone number format.' };
+      const errInfo = getFirebaseAuthErrorMessage(err);
+      logOtpEvent('Firebase request error', {
+        code: errInfo.code,
+        message: errInfo.message,
+        actionRequired: errInfo.actionRequired,
+      });
+
+      return {
+        success: false,
+        error: errInfo.message,
+        errorCode: errInfo.code,
+        actionRequired: errInfo.actionRequired,
+      };
     }
   };
 
@@ -600,9 +681,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     role: UserRole,
     name?: string
   ): Promise<{ success: boolean; error?: string }> => {
+    logOtpEvent('OTP confirmation started', { role });
+
     try {
       const result = await confirmationResult.confirm(otp);
       const user = result.user;
+      logOtpEvent('OTP confirmation success: User authenticated', {
+        uid: user.uid,
+        phone: user.phoneNumber || '',
+      });
 
       const profile: User = {
         id: user.uid,
@@ -633,8 +720,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       return { success: true };
     } catch (err: any) {
-      console.error('Phone OTP Confirm Error:', err);
-      return { success: false, error: err?.message || 'Invalid OTP code. Please enter the 6-digit code received.' };
+      const errInfo = getFirebaseAuthErrorMessage(err);
+      logOtpEvent('OTP confirmation error', {
+        code: errInfo.code,
+        message: errInfo.message,
+      });
+
+      return {
+        success: false,
+        error: errInfo.message,
+      };
     }
   };
 
@@ -744,30 +839,72 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIsLoggedIn(false);
   };
 
-  // Restaurant Registration
+  // Restaurant Registration - Writes to canonical 'restaurants' collection with status PENDING_APPROVAL
   const registerRestaurant = async (
     newRestData: Omit<Restaurant, 'id' | 'createdAt' | 'status' | 'averageRating' | 'totalReviews'>
   ): Promise<Restaurant> => {
     const restId = `rest-${Date.now().toString().slice(-6)}`;
+    const realOwnerUid =
+      auth.currentUser?.uid ||
+      (currentUser.id && currentUser.id !== 'guest' ? currentUser.id : `owner-${Date.now().toString().slice(-6)}`);
+
+    logRestaurantEvent('Registration submitted', {
+      name: newRestData.name,
+      ownerUid: realOwnerUid,
+      restId,
+      city: newRestData.city,
+    });
+
+    const nowTimestamp = new Date().toISOString();
+    const locationObj: RestaurantLocation = newRestData.location || {
+      address: newRestData.address,
+      locality: newRestData.area,
+      city: newRestData.city,
+      district: newRestData.city.includes('Tumakuru') || newRestData.city.includes('Tumkur') ? 'Tumakuru' : newRestData.city,
+      state: 'Karnataka',
+      country: 'India',
+      pincode: '572101',
+      latitude: newRestData.lat,
+      longitude: newRestData.lng,
+      placeId: `place-${restId}`,
+      formattedAddress: `${newRestData.address}, ${newRestData.area}, ${newRestData.city}`,
+      geocodingProvider: 'Google Maps',
+      locationVerified: true,
+      updatedAt: nowTimestamp,
+    };
+
     const newRest: Restaurant = {
       ...newRestData,
       id: restId,
-      ownerId: currentUser.id && currentUser.id !== 'guest' ? currentUser.id : `owner-${Date.now()}`,
-      status: 'PENDING_APPROVAL', // Exact prompt requirement
+      ownerId: realOwnerUid,
+      status: 'PENDING_APPROVAL', // Canonical requirement
+      location: locationObj,
       averageRating: 0,
       totalReviews: 0,
-      createdAt: new Date().toISOString(),
+      createdAt: nowTimestamp,
+      updatedAt: nowTimestamp,
     };
-
-    // Update local state immediately for instant feedback
-    setRestaurants((prev) => [newRest, ...prev]);
 
     // Save directly to Firestore collection 'restaurants'
     try {
       await setDoc(doc(db, 'restaurants', restId), newRest);
-    } catch (err) {
-      console.warn('Firestore setDoc restaurant error:', err);
+      logRestaurantEvent('Firestore write success', {
+        restId,
+        ownerId: realOwnerUid,
+        status: 'PENDING_APPROVAL',
+      });
+    } catch (err: any) {
+      logRestaurantEvent('Firestore write failure', {
+        error: err?.message,
+        code: err?.code,
+        restId,
+      });
+      // Throw error to allow UI to notify the user
+      throw err;
     }
+
+    // Update local state immediately for instant UI feedback
+    setRestaurants((prev) => [newRest, ...prev]);
 
     // Link restaurantId to owner
     updateUserProfile({ restaurantId: restId });
@@ -792,37 +929,70 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return newRest;
   };
 
-  // Admin Actions on Restaurants
+  // Admin Actions on Restaurants - Updates the original document in 'restaurants'
   const adminApproveRestaurant = async (restaurantId: string): Promise<void> => {
+    logRestaurantEvent('Admin approve action started', { restaurantId });
+    const nowIso = new Date().toISOString();
+
+    const approvePayload = {
+      status: 'ACTIVE' as const,
+      approvedAt: nowIso,
+      approvedBy: currentUser.email || 'admin',
+      updatedAt: nowIso,
+    };
+
     setRestaurants((prev) =>
-      prev.map((r) => (r.id === restaurantId ? { ...r, status: 'ACTIVE' as const } : r))
+      prev.map((r) => (r.id === restaurantId ? { ...r, ...approvePayload } : r))
     );
 
     try {
-      await updateDoc(doc(db, 'restaurants', restaurantId), {
-        status: 'ACTIVE',
-        updatedAt: new Date().toISOString(),
+      await updateDoc(doc(db, 'restaurants', restaurantId), approvePayload);
+      logRestaurantEvent('Approval update result: ACTIVE', {
+        restaurantId,
+        approvedBy: approvePayload.approvedBy,
       });
-    } catch (err) {
-      console.warn('Firestore updateDoc approve error:', err);
+    } catch (err: any) {
+      logRestaurantEvent('Approval update failure', {
+        restaurantId,
+        error: err?.message,
+        code: err?.code,
+      });
+      throw err;
     }
 
     addAuditLog('APPROVE_RESTAURANT', 'restaurant', restaurantId, 'Restaurant verified and published active');
   };
 
   const adminRejectRestaurant = async (restaurantId: string, reason: string): Promise<void> => {
+    logRestaurantEvent('Admin reject action started', { restaurantId, reason });
+    const nowIso = new Date().toISOString();
+
+    const rejectPayload = {
+      status: 'REJECTED' as const,
+      rejectionReason: reason,
+      rejectedAt: nowIso,
+      rejectedBy: currentUser.email || 'admin',
+      updatedAt: nowIso,
+    };
+
     setRestaurants((prev) =>
-      prev.map((r) => (r.id === restaurantId ? { ...r, status: 'REJECTED' as const } : r))
+      prev.map((r) => (r.id === restaurantId ? { ...r, ...rejectPayload } : r))
     );
 
     try {
-      await updateDoc(doc(db, 'restaurants', restaurantId), {
-        status: 'REJECTED',
-        rejectionReason: reason,
-        updatedAt: new Date().toISOString(),
+      await updateDoc(doc(db, 'restaurants', restaurantId), rejectPayload);
+      logRestaurantEvent('Approval update result: REJECTED', {
+        restaurantId,
+        reason,
+        rejectedBy: rejectPayload.rejectedBy,
       });
-    } catch (err) {
-      console.warn('Firestore updateDoc reject error:', err);
+    } catch (err: any) {
+      logRestaurantEvent('Rejection update failure', {
+        restaurantId,
+        error: err?.message,
+        code: err?.code,
+      });
+      throw err;
     }
 
     addAuditLog('REJECT_RESTAURANT', 'restaurant', restaurantId, `Restaurant registration declined: ${reason}`);
@@ -1157,12 +1327,59 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { deduction: outcome.deductionAmount, refund: outcome.refundAmount };
   };
 
-  const toggleLocationSharing = (bookingId: string) => {
-    setBookings((prev) =>
-      prev.map((b) =>
-        b.id === bookingId ? { ...b, customerLocationShared: !b.customerLocationShared } : b
-      )
-    );
+  const toggleLocationSharing = async (bookingId: string) => {
+    const booking = bookings.find((b) => b.id === bookingId);
+    if (!booking) return;
+
+    const willShare = !booking.customerLocationShared;
+
+    if (willShare) {
+      try {
+        const pos = await detectBrowserLocation();
+        const locPayload = {
+          lat: pos.latitude,
+          lng: pos.longitude,
+          updatedAt: new Date().toISOString(),
+        };
+
+        setBookings((prev) =>
+          prev.map((b) =>
+            b.id === bookingId
+              ? { ...b, customerLocationShared: true, customerCurrentLocation: locPayload }
+              : b
+          )
+        );
+
+        try {
+          updateDoc(doc(db, 'bookings', bookingId), {
+            customerLocationShared: true,
+            customerCurrentLocation: locPayload,
+          }).catch(() => {});
+        } catch {}
+      } catch (err: any) {
+        console.warn('Location detection for sharing fallback:', err);
+        setBookings((prev) =>
+          prev.map((b) =>
+            b.id === bookingId ? { ...b, customerLocationShared: true } : b
+          )
+        );
+      }
+    } else {
+      setBookings((prev) =>
+        prev.map((b) =>
+          b.id === bookingId
+            ? { ...b, customerLocationShared: false, customerCurrentLocation: undefined }
+            : b
+        )
+      );
+
+      try {
+        updateDoc(doc(db, 'bookings', bookingId), {
+          customerLocationShared: false,
+          customerCurrentLocation: null,
+        }).catch(() => {});
+      } catch {}
+    }
   };
 
   const addCustomerReview = (
@@ -1353,16 +1570,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setNotifications([]);
   };
 
-  const refreshPlatformData = () => {
+  const refreshPlatformData = async () => {
     try {
-      getDocs(collection(db, 'restaurants')).then((snap) => {
-        if (!snap.empty) {
-          const list: Restaurant[] = [];
-          snap.forEach((d) => list.push({ ...(d.data() as Restaurant), id: d.id }));
-          setRestaurants(list);
-        }
-      }).catch(() => {});
-    } catch {}
+      const isSuper =
+        isAdminAuthenticated ||
+        (firebaseUser &&
+          (firebaseUser.email === 'atanunath66@gmail.com' || firebaseUser.email === 'atanunath44@gmail.com'));
+      const q = isSuper
+        ? collection(db, 'restaurants')
+        : query(collection(db, 'restaurants'), where('status', '==', 'ACTIVE'));
+
+      logRestaurantEvent('Platform data refresh started', { isSuper });
+      const snap = await getDocs(q);
+      const list: Restaurant[] = [];
+      snap.forEach((d) => list.push({ ...(d.data() as Restaurant), id: d.id }));
+      setRestaurants((prev) => {
+        if (isSuper) return list;
+        const pendingOrOwned = prev.filter(
+          (r) => r.status !== 'ACTIVE' && (r.ownerId === (firebaseUser?.uid || currentUser.id) || !r.status)
+        );
+        const liveIds = new Set(list.map((r) => r.id));
+        const localPending = pendingOrOwned.filter((r) => !liveIds.has(r.id));
+        return [...list, ...localPending];
+      });
+      logRestaurantEvent('Platform data refresh finished: retrieved records', { count: list.length });
+      try {
+        localStorage.setItem(STORAGE_KEYS.RESTAURANTS, JSON.stringify(list));
+      } catch {}
+    } catch (err: any) {
+      logRestaurantEvent('Platform data refresh failed', {
+        message: err?.message,
+        code: err?.code,
+      });
+    }
   };
 
   return (

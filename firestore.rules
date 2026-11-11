@@ -14,6 +14,7 @@ service cloud.firestore {
     function isSuperAdmin() {
       return isSignedIn() && (
         request.auth.token.email == 'atanunath66@gmail.com' ||
+        request.auth.token.email == 'atanunath44@gmail.com' ||
         exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );
     }
@@ -22,30 +23,51 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // User profiles
+    // Health / Connection check
+    match /test/{docId} {
+      allow read: if true;
+    }
+
+    // User profiles - Customers & Store owners can manage their own profile; cannot self-assign admin role
     match /users/{userId} {
       allow get: if isOwner(userId) || isSuperAdmin();
       allow list: if isSuperAdmin();
       allow create: if isOwner(userId) || isSuperAdmin();
-      allow update: if isOwner(userId) || isSuperAdmin();
+      allow update: if (isOwner(userId) && request.resource.data.role == resource.data.role) || isSuperAdmin();
       allow delete: if isSuperAdmin();
     }
 
-    // Restaurants: Public can browse ACTIVE ones; Owners can see their own; Admins see all
+    // Restaurants:
+    // - Customers can read active public listings
+    // - Store owners can create listings (status MUST be PENDING_APPROVAL) and edit their own records (cannot change status to ACTIVE)
+    // - Admins can read all listings and approve/reject/suspend
     match /restaurants/{restaurantId} {
-      allow get: if resource.data.status == 'ACTIVE' || (isSignedIn() && (resource.data.ownerId == request.auth.uid || isSuperAdmin()));
-      allow list: if resource.data.status == 'ACTIVE' || (isSignedIn() && (resource.data.ownerId == request.auth.uid || isSuperAdmin()));
-      allow create: if isSignedIn() && (request.resource.data.ownerId == request.auth.uid || isSuperAdmin());
-      allow update: if isSuperAdmin() || (isSignedIn() && resource.data.ownerId == request.auth.uid);
+      allow get: if resource.data.status == 'ACTIVE' || 
+                 (isSignedIn() && (resource.data.ownerId == request.auth.uid || isSuperAdmin()));
+      allow list: if resource.data.status == 'ACTIVE' || 
+                  (isSignedIn() && (resource.data.ownerId == request.auth.uid || isSuperAdmin()));
+      allow create: if isSignedIn() && (
+        isSuperAdmin() ||
+        (
+          request.resource.data.ownerId == request.auth.uid &&
+          request.resource.data.status == 'PENDING_APPROVAL'
+        )
+      );
+      allow update: if isSuperAdmin() || (
+        isSignedIn() &&
+        resource.data.ownerId == request.auth.uid &&
+        request.resource.data.ownerId == resource.data.ownerId &&
+        request.resource.data.status == resource.data.status
+      );
       allow delete: if isSuperAdmin();
     }
 
     // Bookings & Orders
     match /bookings/{bookingId} {
-      allow get: if isSignedIn() && (resource.data.customerId == request.auth.uid || isSuperAdmin());
-      allow list: if isSignedIn() && (resource.data.customerId == request.auth.uid || isSuperAdmin());
-      allow create: if isSignedIn() && (request.resource.data.customerId == request.auth.uid || isSuperAdmin());
-      allow update: if isSignedIn() && (resource.data.customerId == request.auth.uid || isSuperAdmin());
+      allow get: if isSignedIn() && (resource.data.customerId == request.auth.uid || resource.data.restaurantOwnerId == request.auth.uid || isSuperAdmin());
+      allow list: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
       allow delete: if isSuperAdmin();
     }
 
@@ -69,3 +91,4 @@ service cloud.firestore {
     }
   }
 }
+

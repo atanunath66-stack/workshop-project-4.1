@@ -30,12 +30,28 @@ export const AuthModal: React.FC<Props> = ({ isOpen, onClose, defaultRole = 'cus
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
+  const [actionRequired, setActionRequired] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Clean up reCAPTCHA verifier on modal unmount
+  React.useEffect(() => {
+    return () => {
+      if ((window as any).recaptchaVerifier) {
+        try {
+          (window as any).recaptchaVerifier.clear();
+        } catch {}
+        (window as any).recaptchaVerifier = null;
+      }
+    };
+  }, []);
 
   if (!isOpen) return null;
 
   const handleGoogleClick = async () => {
     setError(null);
+    setErrorCode(null);
+    setActionRequired(null);
     setIsGoogleLoading(true);
     try {
       const res = await signInWithGoogle(role);
@@ -52,11 +68,14 @@ export const AuthModal: React.FC<Props> = ({ isOpen, onClose, defaultRole = 'cus
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setErrorCode(null);
+    setActionRequired(null);
     setSuccessMsg(null);
 
     const cleanPhone = phoneNumber.trim().replace(/\s+/g, '');
     if (cleanPhone.length < 10) {
       setError('Please enter a valid 10-digit mobile number.');
+      setErrorCode('auth/invalid-phone-number');
       return;
     }
 
@@ -65,9 +84,11 @@ export const AuthModal: React.FC<Props> = ({ isOpen, onClose, defaultRole = 'cus
       const res = await sendPhoneOtp(cleanPhone, 'auth-recaptcha-container');
       if (res.success && res.confirmationResult) {
         setConfirmationResult(res.confirmationResult);
-        setSuccessMsg(`OTP sent to ${cleanPhone}. Please enter the 6-digit verification code below.`);
+        setSuccessMsg(`OTP request sent to ${cleanPhone}. Please enter the 6-digit verification code below.`);
       } else {
         setError(res.error || 'Failed to send OTP. Please check your phone number.');
+        setErrorCode(res.errorCode || null);
+        setActionRequired(res.actionRequired || null);
       }
     } catch (err: any) {
       setError(err?.message || 'Error initializing phone authentication.');
@@ -82,11 +103,14 @@ export const AuthModal: React.FC<Props> = ({ isOpen, onClose, defaultRole = 'cus
 
     if (otp.trim().length < 6) {
       setError('Please enter the full 6-digit OTP code.');
+      setErrorCode('auth/invalid-verification-code');
       return;
     }
 
     setIsVerifyingOtp(true);
     setError(null);
+    setErrorCode(null);
+    setActionRequired(null);
     try {
       const res = await verifyPhoneOtp(confirmationResult, otp.trim(), role, fullName.trim() || undefined);
       if (res.success) {
@@ -183,8 +207,17 @@ export const AuthModal: React.FC<Props> = ({ isOpen, onClose, defaultRole = 'cus
 
         <div className="p-6 space-y-4">
           {error && (
-            <div className="p-3 bg-[#FCE8EF] border border-[#F8D3DF] rounded-2xl text-xs text-[#D95368] font-medium leading-relaxed">
-              {error}
+            <div className="p-3.5 bg-[#FCE8EF] border border-[#F8D3DF] rounded-2xl text-xs space-y-1.5 leading-relaxed">
+              <div className="font-bold text-[#D95368] flex items-center justify-between">
+                <span>{errorCode ? `Authentication Error (${errorCode})` : 'Authentication Error'}</span>
+              </div>
+              <p className="text-[#34343A] font-medium">{error}</p>
+              {actionRequired && (
+                <div className="p-2.5 bg-white/90 rounded-xl border border-[#F8D3DF] text-[11px] text-[#34343A] space-y-1">
+                  <span className="font-bold text-[#C96884] block">Firebase Console Requirement:</span>
+                  <p className="text-stone-700 leading-snug">{actionRequired}</p>
+                </div>
+              )}
             </div>
           )}
 

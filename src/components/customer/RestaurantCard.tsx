@@ -61,9 +61,9 @@ export const RestaurantCard: React.FC<Props> = ({ restaurant, onClick }) => {
           </p>
 
           {/* Clean Unboxed Metadata with · separator */}
-          <div className="flex items-center gap-1.5 text-xs text-[#777781] mt-2">
+          <div className="flex items-center gap-1.5 text-xs text-[#777781] mt-2 flex-wrap">
             <MapPin className="w-3.5 h-3.5 text-[#C96884] shrink-0" />
-            <span>{restaurant.area}</span>
+            <span className="font-semibold text-[#34343A]">{restaurant.area}</span>
             <span aria-hidden="true">·</span>
             <span>₹{restaurant.priceForTwo} for two</span>
             <span aria-hidden="true">·</span>
@@ -71,7 +71,7 @@ export const RestaurantCard: React.FC<Props> = ({ restaurant, onClick }) => {
           </div>
         </div>
 
-        {/* Cancellation snapshot notice */}
+        {/* Cancellation snapshot notice and Get Directions */}
         <div className="pt-2.5 border-t border-[#E8E8EC] flex items-center justify-between text-[11px]">
           <div className="flex items-center gap-1 text-[#777781]">
             <ShieldAlert className="w-3 h-3 text-[#777781]" />
@@ -82,7 +82,7 @@ export const RestaurantCard: React.FC<Props> = ({ restaurant, onClick }) => {
             </span>
           </div>
           <span className="font-bold text-[#C96884] group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
-            Pre-book →
+            Pre-book Table →
           </span>
         </div>
       </div>

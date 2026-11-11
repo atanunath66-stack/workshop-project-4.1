@@ -99,6 +99,8 @@ export const OwnerPortal: React.FC = () => {
   const [initialDishDesc, setInitialDishDesc] = useState('Freshly made on order with house-special spices.');
 
   const [regError, setRegError] = useState<string | null>(null);
+  const [isSubmittingReg, setIsSubmittingReg] = useState(false);
+  const [submittedRestId, setSubmittedRestId] = useState<string | null>(null);
 
   // Policy form state
   const [policyType, setPolicyType] = useState<CancellationPolicy['type']>('fixed');
@@ -197,73 +199,85 @@ export const OwnerPortal: React.FC = () => {
       (currentUser.phone && r.phone && r.phone === currentUser.phone)
   );
 
-  // Handle new restaurant registration submission
-  const handleRegisterSubmit = (e: React.FormEvent) => {
+  // Handle new restaurant registration submission with strict duplicate guard and write confirmation
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmittingReg) return; // Prevent duplicate concurrent submissions
+
     if (!regName.trim() || !regAddress.trim() || !regUpiId.trim()) {
       setRegError('Please provide restaurant name, complete address, and your UPI ID for direct customer payouts.');
       return;
     }
     setRegError(null);
+    setIsSubmittingReg(true);
 
-    const initialMenu: MenuItem[] = [
-      {
-        id: `m-init-${Date.now()}`,
-        name: initialDishName,
-        price: initialDishPrice,
-        description: initialDishDesc,
-        category: regCategories[0] || 'Street Food',
-        isVeg: initialDishVeg,
-        isAvailable: true,
-        prepTimeMinutes: initialDishPrep,
-        image: regCoverImage,
-        bestseller: true,
-      },
-    ];
+    try {
+      const initialMenu: MenuItem[] = [
+        {
+          id: `m-init-${Date.now()}`,
+          name: initialDishName,
+          price: initialDishPrice,
+          description: initialDishDesc,
+          category: regCategories[0] || 'Street Food',
+          isVeg: initialDishVeg,
+          isAvailable: true,
+          prepTimeMinutes: initialDishPrep,
+          image: regCoverImage,
+          bestseller: true,
+        },
+      ];
 
-    const newPolicy: CancellationPolicy = {
-      type: policyType,
-      deductionValue,
-      minDeductionCharge: minCharge,
-      freeCancellationDeadlineMinutes: deadlineMinutes,
-      allowCancellationAfterPrepStarts: false,
-      termsText:
-        policyType === 'fixed'
-          ? `Free cancellation up to ${deadlineMinutes} minutes before arrival. ₹${deductionValue} flat deduction applies if cancelled later.`
-          : `Free cancellation up to ${deadlineMinutes} minutes prior. ${deductionValue}% deduction (min ₹${minCharge}) applies thereafter.`,
-    };
+      const newPolicy: CancellationPolicy = {
+        type: policyType,
+        deductionValue,
+        minDeductionCharge: minCharge,
+        freeCancellationDeadlineMinutes: deadlineMinutes,
+        allowCancellationAfterPrepStarts: false,
+        termsText:
+          policyType === 'fixed'
+            ? `Free cancellation up to ${deadlineMinutes} minutes before arrival. ₹${deductionValue} flat deduction applies if cancelled later.`
+            : `Free cancellation up to ${deadlineMinutes} minutes prior. ${deductionValue}% deduction (min ₹${minCharge}) applies thereafter.`,
+      };
 
-    const finalOwnerId = currentUser?.id && currentUser.id !== 'guest' ? currentUser.id : `owner-${Date.now().toString().slice(-4)}`;
-    const finalOwnerName = regOwnerName.trim() || currentUser?.name || 'Local Food Partner';
-    const finalPhone = regPhone.trim() || '+91 98220 12345';
-    const finalEmail = regEmail.trim() || currentUser?.email || 'owner@alookhaoge.in';
+      const finalOwnerId = currentUser?.id && currentUser.id !== 'guest' ? currentUser.id : `owner-${Date.now().toString().slice(-4)}`;
+      const finalOwnerName = regOwnerName.trim() || currentUser?.name || 'Local Food Partner';
+      const finalPhone = regPhone.trim() || '+91 98220 12345';
+      const finalEmail = regEmail.trim() || currentUser?.email || 'owner@alookhaoge.in';
 
-    registerRestaurant({
-      name: regName.trim(),
-      tagline: regTagline.trim() || 'Authentic local specialty eatery',
-      description: regDesc.trim() || 'Locally owned neighborhood culinary gem.',
-      ownerId: finalOwnerId,
-      ownerName: finalOwnerName,
-      phone: finalPhone,
-      email: finalEmail,
-      upiId: regUpiId.trim(),
-      address: regAddress,
-      area: regArea,
-      city: regCity,
-      lat: regLat,
-      lng: regLng,
-      coverImage: regCoverImage,
-      galleryImages: [regCoverImage],
-      categories: regCategories,
-      openingTime: regOpeningTime,
-      closingTime: regClosingTime,
-      priceForTwo: regPriceForTwo,
-      facilities: regFacilities,
-      totalTables: regTotalTables,
-      availableTables: regTotalTables,
-      cancellationPolicy: newPolicy,
-      menu: initialMenu,
-    });
+      const created = await registerRestaurant({
+        name: regName.trim(),
+        tagline: regTagline.trim() || 'Authentic local specialty eatery',
+        description: regDesc.trim() || 'Locally owned neighborhood culinary gem.',
+        ownerId: finalOwnerId,
+        ownerName: finalOwnerName,
+        phone: finalPhone,
+        email: finalEmail,
+        upiId: regUpiId.trim(),
+        address: regAddress,
+        area: regArea,
+        city: regCity,
+        lat: regLat,
+        lng: regLng,
+        coverImage: regCoverImage,
+        galleryImages: [regCoverImage],
+        categories: regCategories,
+        openingTime: regOpeningTime,
+        closingTime: regClosingTime,
+        priceForTwo: regPriceForTwo,
+        facilities: regFacilities,
+        totalTables: regTotalTables,
+        availableTables: regTotalTables,
+        cancellationPolicy: newPolicy,
+        menu: initialMenu,
+      });
+
+      setSubmittedRestId(created.id);
+    } catch (err: any) {
+      console.error('Registration submission error:', err);
+      setRegError(err?.message || 'Failed to submit registration to Firestore. Please check your network and permissions.');
+    } finally {
+      setIsSubmittingReg(false);
+    }
   };
 
   // If owner has NOT registered a restaurant yet, show the Business Registration Wizard
@@ -611,9 +625,10 @@ export const OwnerPortal: React.FC = () => {
 
             <button
               type="submit"
-              className="w-full py-3.5 px-6 bg-[#34343A] hover:bg-[#232328] text-white rounded-2xl font-bold text-sm transition-all shadow-md flex items-center justify-center gap-2 mt-4 cursor-pointer"
+              disabled={isSubmittingReg}
+              className="w-full py-3.5 px-6 bg-[#34343A] hover:bg-[#232328] text-white rounded-2xl font-bold text-sm transition-all shadow-md flex items-center justify-center gap-2 mt-4 cursor-pointer disabled:opacity-50"
             >
-              <span>Submit Restaurant for Admin Verification</span>
+              <span>{isSubmittingReg ? 'Saving Restaurant to Cloud Firestore...' : 'Submit Restaurant for Admin Verification'}</span>
               <ArrowRight className="w-4 h-4 text-[#E8A0B5]" />
             </button>
           </form>

@@ -16,6 +16,7 @@ import {
 import { Restaurant, MenuItem, Booking } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { PaymentModal } from '../common/PaymentModal';
+import { GoogleMapCard } from '../common/GoogleMapCard';
 
 interface Props {
   restaurant: Restaurant;
@@ -683,11 +684,52 @@ export const RestaurantDetailsPage: React.FC<Props> = ({
               </div>
             </div>
 
-            <div>
-              <h3 className="text-sm font-bold font-display text-stone-900 mb-2">Location & Coordinates</h3>
-              <p className="text-xs text-stone-500">
-                Latitude: {restaurant.lat} · Longitude: {restaurant.lng} · {restaurant.address}
-              </p>
+            <div className="space-y-3 pt-4 border-t border-stone-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-bold font-display text-[#34343A] flex items-center gap-1.5">
+                    <MapPin className="w-4 h-4 text-[#C96884]" />
+                    Restaurant Location & Directions
+                  </h3>
+                  <p className="text-xs text-[#777781] mt-0.5">
+                    {restaurant.location?.formattedAddress || `${restaurant.address}, ${restaurant.area}, ${restaurant.city}`}
+                  </p>
+                </div>
+
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${restaurant.location?.latitude ?? restaurant.lat},${restaurant.location?.longitude ?? restaurant.lng}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-4 py-2 bg-[#C96884] hover:bg-[#b25771] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                >
+                  <MapPin className="w-3.5 h-3.5" />
+                  <span>GET DIRECTIONS</span>
+                </a>
+              </div>
+
+              {/* Live Google Map Container */}
+              <div className="rounded-2xl overflow-hidden border border-[#E8E8EC] shadow-2xs">
+                <GoogleMapCard
+                  center={{
+                    lat: restaurant.location?.latitude ?? restaurant.lat,
+                    lng: restaurant.location?.longitude ?? restaurant.lng,
+                  }}
+                  zoom={15}
+                  height="260px"
+                  markers={[
+                    {
+                      id: restaurant.id,
+                      lat: restaurant.location?.latitude ?? restaurant.lat,
+                      lng: restaurant.location?.longitude ?? restaurant.lng,
+                      title: restaurant.name,
+                      subtitle: restaurant.area,
+                      price: restaurant.priceForTwo,
+                      rating: restaurant.averageRating,
+                      image: restaurant.coverImage,
+                    },
+                  ]}
+                />
+              </div>
             </div>
           </div>
         )}
