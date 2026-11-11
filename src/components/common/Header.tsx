@@ -88,7 +88,7 @@ export const Header: React.FC<Props> = ({ activeView, setActiveView }) => {
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#E8E8EC] shadow-2xs">
+      <header className="sticky top-0 z-40 bg-[#0E1115]/95 backdrop-blur-md border-b border-stone-800 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between gap-4 sm:gap-8 h-16">
             {/* Zone 1: Single Brand Wordmark & Location Selector */}
@@ -98,13 +98,13 @@ export const Header: React.FC<Props> = ({ activeView, setActiveView }) => {
                   setSelectedRestaurant(null);
                   setActiveView('discover');
                 }}
-                className="text-lg sm:text-xl font-extrabold tracking-tight text-[#34343A] font-display flex items-center gap-2 whitespace-nowrap shrink-0 group cursor-pointer"
+                className="text-lg sm:text-xl font-extrabold tracking-tight text-white font-display flex items-center gap-2 whitespace-nowrap shrink-0 group cursor-pointer"
               >
-                <span className="w-8 h-8 rounded-2xl bg-[#FCE8EF] border border-[#F8D3DF] text-[#C96884] flex items-center justify-center font-display text-sm font-black shadow-xs group-hover:scale-105 transition-transform">
-                  🥔
+                <span className="w-8 h-8 rounded-2xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 flex items-center justify-center font-display text-sm font-black shadow-xs group-hover:scale-105 transition-transform">
+                  🍲
                 </span>
                 <span>
-                  Aloo<span className="text-[#C96884]">Khaoge</span>
+                  ZA<span className="text-[#E8A0B5]">ikya</span>
                 </span>
               </button>
 

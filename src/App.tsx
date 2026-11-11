@@ -58,7 +58,7 @@ const MainContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#FAF7F2] text-[#1C1917]">
+    <div className="min-h-screen flex flex-col bg-zaikya-ambient text-[#F3F4F6]">
       {/* Top Header */}
       <Header activeView={activeView} setActiveView={setActiveView} />
 
@@ -149,10 +149,10 @@ const MainContent: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="space-y-3">
               <div className="text-xl font-extrabold font-display flex items-center gap-2">
-                <span className="w-8 h-8 rounded-xl bg-[#E8A0B5] text-stone-900 flex items-center justify-center font-black text-sm shadow-xs">
-                  🥔
+                <span className="w-8 h-8 rounded-xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 flex items-center justify-center font-black text-sm shadow-xs">
+                  🍲
                 </span>
-                <span>Aloo<span className="text-[#E8A0B5]">Khaoge</span></span>
+                <span>ZA<span className="text-[#E8A0B5]">ikya</span></span>
               </div>
               <p className="text-xs text-stone-400 leading-relaxed">
                 Empowering small local restaurants, food stalls, and hidden culinary gems to thrive with digital pre-booking, 50% advance payments, and transparent cancellations.
@@ -232,7 +232,7 @@ const MainContent: React.FC = () => {
                 Built with Razorpay checkout. 50% advance secures your table and fresh preparation. Upfront cancellation rules guarantee fair refunds without surprises.
               </p>
               <div className="pt-2 text-[10px] text-stone-500 font-mono">
-                © 2026 AlooKhaoge Technologies Pvt Ltd.
+                © 2026 ZAikya Technologies Pvt Ltd.
               </div>
             </div>
           </div>

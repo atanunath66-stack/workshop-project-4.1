@@ -1,5 +1,5 @@
 /**
- * Geospatial Utilities for AlooKhaoge Hyperlocal Platform
+ * Geospatial Utilities for ZAikya Hyperlocal Platform
  * Launch City: Tumakuru (Tumkur), Karnataka, India
  */
 

@@ -266,7 +266,7 @@ test('generateUpiDeepLink: constructs compliant deep link intent URIs for GPay, 
     payeeUpi: 'tumkurstall@okhdfcbank',
     payeeName: 'Tumakuru Thatte Idli',
     amount: 150,
-    transactionNote: 'AlooKhaoge Order bkg-101',
+    transactionNote: 'ZAikya Order bkg-101',
   };
 
   // Google Pay intent deep link

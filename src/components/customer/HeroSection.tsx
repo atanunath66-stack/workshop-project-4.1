@@ -21,20 +21,20 @@ export const HeroSection: React.FC<Props> = ({ onOpenMap, onOpenLocationModal })
   ];
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-[#FCE8EF]/40 via-[#F7F7F8] to-[#F7F7F8] py-8 sm:py-12 border-b border-[#E8E8EC]">
+    <section className="relative overflow-hidden bg-gradient-to-b from-emerald-950/30 via-[#0E1115] to-[#0A0C0E] py-8 sm:py-12 border-b border-stone-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         <div className="max-w-3xl mx-auto text-center space-y-4">
-          {/* Elegant pill badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#FCE8EF] border border-[#F8D3DF] rounded-2xl text-xs font-semibold text-[#C96884]">
-            <Sparkles className="w-3.5 h-3.5 text-[#C96884]" />
-            <span>Support Local Stalls, Cafés & Street Food Legends</span>
+          {/* Elegant pill badge with green & pink accents */}
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-950/60 border border-emerald-500/30 rounded-2xl text-xs font-semibold text-emerald-300">
+            <Sparkles className="w-3.5 h-3.5 text-[#E8A0B5]" />
+            <span>Support Local Stalls, Cafés &amp; Street Food Legends</span>
           </div>
 
-          <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-[#34343A] font-display leading-tight">
-            Discover Hidden Local Food Gems & Pre-Book in <span className="text-[#C96884]">Seconds</span>
+          <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white font-display leading-tight">
+            Discover Hidden Local Food Gems &amp; Pre-Book in <span className="text-[#E8A0B5]">Seconds</span>
           </h1>
 
-          <p className="text-[#777781] text-sm sm:text-base max-w-xl mx-auto leading-relaxed">
+          <p className="text-stone-400 text-sm sm:text-base max-w-xl mx-auto leading-relaxed">
             Reserve tables, pre-order hot dishes before reaching the stall, and enjoy 50% flexible advance payments with transparent cancellation.
           </p>
 

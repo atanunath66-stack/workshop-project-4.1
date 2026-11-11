@@ -617,9 +617,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       timestamp: new Date().toISOString(),
     };
     setAuditLogs((prev) => [newLog, ...prev]);
-    try {
-      setDoc(doc(db, 'auditLogs', newLog.id), newLog).catch(() => {});
-    } catch {}
+    if (isAuthorizedAdminEmail(firebaseUser?.email || '') || isAdminAuthenticated) {
+      try {
+        setDoc(doc(db, 'auditLogs', newLog.id), newLog).catch(() => {});
+      } catch {}
+    }
   };
 
   const sendNotification = (
@@ -1266,6 +1268,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       restaurantId,
       restaurantName: restaurant.name,
       restaurantAddress: restaurant.address,
+      restaurantOwnerId: 'ownerId' in restaurant ? restaurant.ownerId : '',
       bookingType,
       numberOfGuests: guests,
       seatingPreference: seating,
@@ -1290,9 +1293,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setBookings((prev) => [newBooking, ...prev]);
 
-    // Save to Firestore
+    // Save to Firestore (omitting trusted financial fields to satisfy security rules)
     try {
-      setDoc(doc(db, 'bookings', bookingId), newBooking).catch((e) => console.warn('Booking write:', e));
+      const {
+        subtotal,
+        totalAmount,
+        discountAmount,
+        taxes,
+        platformFee,
+        advanceAmount,
+        remainingAmount,
+        adminPlatformCommission,
+        merchantPayoutAmount,
+        refundAmount,
+        refundStatus,
+        refundTransactionId,
+        cancellationDeduction,
+        ...customerBookingPayload
+      } = newBooking as any;
+      setDoc(doc(db, 'bookings', bookingId), customerBookingPayload).catch((e) => console.warn('Booking write:', e));
     } catch {}
 
     sendNotification(

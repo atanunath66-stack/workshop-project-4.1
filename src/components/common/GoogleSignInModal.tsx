@@ -134,7 +134,7 @@ export const GoogleSignInModal: React.FC<Props> = ({
                 Sign in with Google
               </h2>
               <p className="text-xs text-stone-500">
-                Continue to <span className="font-semibold text-stone-800">AlooKhaoge</span>
+                Continue to <span className="font-semibold text-stone-800">ZAikya</span>
               </p>
             </div>
           </div>
@@ -235,7 +235,7 @@ export const GoogleSignInModal: React.FC<Props> = ({
               </div>
 
               <p className="text-[11px] text-stone-400 text-center pt-2 leading-relaxed">
-                To continue, Google will share your name, email address, language preference, and profile picture with AlooKhaoge.
+                To continue, Google will share your name, email address, language preference, and profile picture with ZAikya.
               </p>
             </div>
           ) : (

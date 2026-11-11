@@ -25,7 +25,7 @@ export const DigitalReceiptModal: React.FC<Props> = ({ booking, onClose }) => {
       }).catch(() => {});
     } else if (navigator.clipboard) {
       navigator.clipboard.writeText(
-        `AlooKhaoge Digital Receipt: ${booking.receiptNumber}\nVenue: ${booking.restaurantName}\nTotal Paid: ₹${booking.totalAmount}\nBooking ID: ${booking.id}`
+        `ZAikya Digital Receipt: ${booking.receiptNumber}\nVenue: ${booking.restaurantName}\nTotal Paid: ₹${booking.totalAmount}\nBooking ID: ${booking.id}`
       );
     }
   };

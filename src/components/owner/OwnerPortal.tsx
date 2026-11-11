@@ -295,7 +295,7 @@ export const OwnerPortal: React.FC = () => {
               <span>Register Your Food Business</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-[#34343A] font-display">
-              List Your Restaurant or Food Stall on AlooKhaoge
+              List Your Restaurant or Food Stall on ZAikya
             </h1>
             <p className="text-xs sm:text-sm text-[#777781] mt-1 max-w-2xl leading-relaxed">
               Empower your stall with digital table pre-bookings and advance payments. Fill out your real business details below for Super Admin verification.

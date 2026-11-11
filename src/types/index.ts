@@ -170,6 +170,7 @@ export interface Booking {
   restaurantId: string;
   restaurantName: string;
   restaurantAddress: string;
+  restaurantOwnerId?: string;
   bookingType: 'table_only' | 'dish_preorder' | 'table_and_dishes';
   numberOfGuests: number;
   seatingPreference: string;
