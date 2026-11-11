@@ -1,0 +1,10 @@
+{
+  "name": "AlooKhaoge - Hyperlocal Food Discovery & Pre-Booking",
+  "description": "AlooKhaoge connects food lovers with authentic local eateries, street food stalls, cafes, and hidden food gems. Pre-book tables and dishes with flexible 50% advance payments and fair cancellations.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

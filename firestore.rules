@@ -1,0 +1,71 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'atanunath66@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // User profiles
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isSuperAdmin();
+      allow list: if isSuperAdmin();
+      allow create: if isOwner(userId) || isSuperAdmin();
+      allow update: if isOwner(userId) || isSuperAdmin();
+      allow delete: if isSuperAdmin();
+    }
+
+    // Restaurants: Public can browse ACTIVE ones; Owners can see their own; Admins see all
+    match /restaurants/{restaurantId} {
+      allow get: if resource.data.status == 'ACTIVE' || (isSignedIn() && (resource.data.ownerId == request.auth.uid || isSuperAdmin()));
+      allow list: if resource.data.status == 'ACTIVE' || (isSignedIn() && (resource.data.ownerId == request.auth.uid || isSuperAdmin()));
+      allow create: if isSignedIn() && (request.resource.data.ownerId == request.auth.uid || isSuperAdmin());
+      allow update: if isSuperAdmin() || (isSignedIn() && resource.data.ownerId == request.auth.uid);
+      allow delete: if isSuperAdmin();
+    }
+
+    // Bookings & Orders
+    match /bookings/{bookingId} {
+      allow get: if isSignedIn() && (resource.data.customerId == request.auth.uid || isSuperAdmin());
+      allow list: if isSignedIn() && (resource.data.customerId == request.auth.uid || isSuperAdmin());
+      allow create: if isSignedIn() && (request.resource.data.customerId == request.auth.uid || isSuperAdmin());
+      allow update: if isSignedIn() && (resource.data.customerId == request.auth.uid || isSuperAdmin());
+      allow delete: if isSuperAdmin();
+    }
+
+    // Promotional campaigns
+    match /discounts/{discountId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    // Security & Operations Audit Logs
+    match /auditLogs/{logId} {
+      allow read: if isSuperAdmin();
+      allow create: if isSignedIn();
+      allow update, delete: if false;
+    }
+
+    // Admins registry
+    match /admins/{adminId} {
+      allow read: if isSuperAdmin() || (isSignedIn() && request.auth.uid == adminId);
+      allow write: if isSuperAdmin();
+    }
+  }
+}

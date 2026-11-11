@@ -1,0 +1,174 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profiles for customers, store owners, and administrators",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "email": { "type": "string", "description": "Email address" },
+        "displayName": { "type": "string", "description": "Full display name" },
+        "phoneNumber": { "type": "string", "description": "Verified phone number" },
+        "role": { "type": "string", "enum": ["customer", "owner", "admin"], "description": "Account authorization role" },
+        "authProvider": { "type": "string", "description": "Authentication method (google, phone, email)" },
+        "createdAt": { "type": "string", "description": "Creation ISO timestamp" },
+        "updatedAt": { "type": "string", "description": "Last updated ISO timestamp" }
+      },
+      "required": ["uid", "role", "createdAt"]
+    },
+    "Restaurant": {
+      "title": "Restaurant",
+      "description": "Hyperlocal food stalls and restaurant venues",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique restaurant document identifier" },
+        "name": { "type": "string", "maxLength": 150, "description": "Restaurant or stall name" },
+        "tagline": { "type": "string", "maxLength": 200, "description": "Specialty or tagline" },
+        "description": { "type": "string", "maxLength": 2000, "description": "Full backstory and offerings" },
+        "ownerId": { "type": "string", "description": "Authenticated store owner Firebase UID" },
+        "ownerName": { "type": "string", "maxLength": 100, "description": "Store owner full name" },
+        "email": { "type": "string", "description": "Store owner contact email" },
+        "phone": { "type": "string", "description": "Store owner verified contact phone" },
+        "upiId": { "type": "string", "description": "Direct payout UPI ID" },
+        "address": { "type": "string", "maxLength": 300, "description": "Physical street address" },
+        "area": { "type": "string", "maxLength": 100, "description": "Neighborhood locality" },
+        "city": { "type": "string", "maxLength": 100, "description": "District or city in Karnataka" },
+        "lat": { "type": "number", "description": "Latitude GPS coordinate" },
+        "lng": { "type": "number", "description": "Longitude GPS coordinate" },
+        "coverImage": { "type": "string", "description": "Primary banner photo URL" },
+        "galleryImages": { "type": "array", "description": "Photo URLs gallery" },
+        "categories": { "type": "array", "description": "Cuisine and venue categories" },
+        "openingTime": { "type": "string", "description": "Operating open time" },
+        "closingTime": { "type": "string", "description": "Operating close time" },
+        "priceForTwo": { "type": "number", "description": "Approximate price for two diners" },
+        "facilities": { "type": "array", "description": "Amenities and payment methods" },
+        "totalTables": { "type": "number", "description": "Total seating capacity tables" },
+        "availableTables": { "type": "number", "description": "Currently unreserved tables" },
+        "cancellationPolicy": { "type": "object", "description": "Deposit deduction rules" },
+        "menu": { "type": "array", "description": "Listed dishes and specialties" },
+        "status": {
+          "type": "string",
+          "enum": ["PENDING_APPROVAL", "ACTIVE", "REJECTED", "SUSPENDED"],
+          "description": "Administrative moderation status"
+        },
+        "rejectionReason": { "type": "string", "description": "Feedback when rejected by admin" },
+        "createdAt": { "type": "string", "description": "Creation ISO timestamp" },
+        "updatedAt": { "type": "string", "description": "Last updated ISO timestamp" }
+      },
+      "required": ["id", "name", "ownerId", "upiId", "address", "area", "city", "status", "createdAt"]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "Customer table pre-bookings, advance payments, and orders",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique booking identifier" },
+        "restaurantId": { "type": "string", "description": "Target restaurant ID" },
+        "restaurantName": { "type": "string", "description": "Name of the restaurant" },
+        "customerId": { "type": "string", "description": "Authenticated customer UID" },
+        "customerName": { "type": "string", "description": "Customer full name" },
+        "customerPhone": { "type": "string", "description": "Customer contact number" },
+        "customerEmail": { "type": "string", "description": "Customer contact email" },
+        "arrivalDate": { "type": "string", "description": "Date of reservation" },
+        "arrivalTime": { "type": "string", "description": "Time of arrival" },
+        "partySize": { "type": "number", "description": "Number of diners" },
+        "items": { "type": "array", "description": "Pre-ordered dishes" },
+        "totalAmount": { "type": "number", "description": "Total order gross amount" },
+        "advanceAmount": { "type": "number", "description": "50% advance deposit paid" },
+        "remainingAmount": { "type": "number", "description": "Payable at stall" },
+        "platformFee": { "type": "number", "description": "2% platform commission" },
+        "cancellationPolicy": { "type": "object", "description": "Snapshot of cancellation policy at booking" },
+        "status": {
+          "type": "string",
+          "enum": ["CONFIRMED", "SEATED", "COMPLETED", "CANCELLED"],
+          "description": "Fulfillment status"
+        },
+        "cancellationReason": { "type": "string", "description": "Reason given if cancelled" },
+        "cancellationDeduction": { "type": "number", "description": "Forfeited fee if cancelled" },
+        "refundAmount": { "type": "number", "description": "Refunded balance" },
+        "refundStatus": { "type": "string", "description": "Settlement state of refund" },
+        "paymentMode": { "type": "string", "description": "UPI app used (gpay, phonepe, upi)" },
+        "receiptNumber": { "type": "string", "description": "Tax invoice number" },
+        "createdAt": { "type": "string", "description": "Creation ISO timestamp" },
+        "updatedAt": { "type": "string", "description": "Last updated ISO timestamp" }
+      },
+      "required": ["id", "restaurantId", "customerId", "arrivalDate", "arrivalTime", "totalAmount", "advanceAmount", "status", "createdAt"]
+    },
+    "Discount": {
+      "title": "Discount",
+      "description": "Platform promotional coupon campaigns",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Campaign document ID" },
+        "code": { "type": "string", "description": "Promotional coupon code" },
+        "title": { "type": "string", "description": "Display name" },
+        "description": { "type": "string", "description": "Terms summary" },
+        "discountType": { "type": "string", "enum": ["percentage", "fixed"], "description": "Discount calculation type" },
+        "discountValue": { "type": "number", "description": "Amount or percentage" },
+        "minOrderValue": { "type": "number", "description": "Minimum subtotal required" },
+        "maxDiscountCap": { "type": "number", "description": "Maximum rupee savings cap" },
+        "applicableToAll": { "type": "boolean", "description": "Whether valid across all venues" },
+        "startDate": { "type": "string", "description": "Start date" },
+        "expiryDate": { "type": "string", "description": "Expiration date" },
+        "maxRedemptions": { "type": "number", "description": "Total coupon quota" },
+        "redemptionCount": { "type": "number", "description": "Current times redeemed" },
+        "isActive": { "type": "boolean", "description": "Whether active" },
+        "createdAt": { "type": "string", "description": "Creation timestamp" }
+      },
+      "required": ["id", "code", "discountType", "discountValue", "isActive"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Immutable administrative audit trail",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Log entry identifier" },
+        "action": { "type": "string", "description": "Administrative operation name" },
+        "targetType": { "type": "string", "description": "Entity category modified" },
+        "targetId": { "type": "string", "description": "Target document ID" },
+        "adminUsername": { "type": "string", "description": "Admin email" },
+        "adminUid": { "type": "string", "description": "Admin Firebase UID" },
+        "timestamp": { "type": "string", "description": "ISO timestamp" },
+        "details": { "type": "string", "description": "Context and rationale" }
+      },
+      "required": ["id", "action", "targetType", "targetId", "adminUsername", "timestamp", "details"]
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "Authorized master administrators",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "description": "Authorized administrator email" },
+        "role": { "type": "string", "description": "superadmin" },
+        "createdAt": { "type": "string", "description": "Authorization timestamp" }
+      },
+      "required": ["email", "role"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Profiles for customers and store owners"
+    },
+    "/restaurants/{restaurantId}": {
+      "schema": "Restaurant",
+      "description": "Hyperlocal food stalls and restaurant listings"
+    },
+    "/bookings/{bookingId}": {
+      "schema": "Booking",
+      "description": "Customer bookings and table pre-orders"
+    },
+    "/discounts/{discountId}": {
+      "schema": "Discount",
+      "description": "Platform promotional campaigns"
+    },
+    "/auditLogs/{logId}": {
+      "schema": "AuditLog",
+      "description": "Immutable security and audit trail"
+    },
+    "/admins/{adminId}": {
+      "schema": "Admin",
+      "description": "Platform super administrators"
+    }
+  }
+}
