@@ -8,7 +8,9 @@ import { RestaurantLocation } from '../types';
 import { TUMKUR_COORDINATES } from '../utils/geoUtils';
 
 export const GOOGLE_MAPS_API_KEY: string =
-  (import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string) || '';
+  (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_GOOGLE_MAPS_API_KEY) ||
+  (typeof process !== 'undefined' && process.env?.VITE_GOOGLE_MAPS_API_KEY) ||
+  '';
 
 export const GOOGLE_MAPS_MAP_ID: string = 'DEMO_MAP_ID';
 export const GMP_ATTRIBUTION_ID: string = 'gmp_mcp_codeassist_v1_aistudio';

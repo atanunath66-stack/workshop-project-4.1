@@ -2,6 +2,7 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import {
   getFirestore,
   doc,
+  getDoc,
   getDocFromServer,
   collection,
   query,
@@ -104,6 +105,7 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
 
 export {
   doc,
+  getDoc,
   collection,
   query,
   where,

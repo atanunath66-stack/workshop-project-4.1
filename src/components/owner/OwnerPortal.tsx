@@ -47,6 +47,7 @@ export const OwnerPortal: React.FC = () => {
     toggleItemAvailability,
     updateRestaurantProfile,
     registerRestaurant,
+    signInWithGoogle,
     setReceiptModalBooking,
     receiptModalBooking,
   } = useApp();
@@ -148,8 +149,11 @@ export const OwnerPortal: React.FC = () => {
           <div className="space-y-3 pt-2">
             <button
               type="button"
-              onClick={() => {
-                openGoogleSignIn('owner');
+              onClick={async () => {
+                const res = await signInWithGoogle('owner');
+                if (!res.success && res.error) {
+                  openGoogleSignIn('owner');
+                }
               }}
               className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-[#E8E8EC] hover:bg-[#FCE8EF]/30 rounded-2xl text-xs font-semibold text-stone-700 transition-all shadow-2xs cursor-pointer"
             >

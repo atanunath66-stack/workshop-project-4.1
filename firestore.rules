@@ -15,6 +15,7 @@ service cloud.firestore {
       return isSignedIn() && (
         request.auth.token.email == 'atanunath66@gmail.com' ||
         request.auth.token.email == 'atanunath44@gmail.com' ||
+        request.auth.token.email == 'atanuhuhu@gmail.com' ||
         exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );
     }
@@ -65,9 +66,9 @@ service cloud.firestore {
     // Bookings & Orders
     match /bookings/{bookingId} {
       allow get: if isSignedIn() && (resource.data.customerId == request.auth.uid || resource.data.restaurantOwnerId == request.auth.uid || isSuperAdmin());
-      allow list: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update: if isSignedIn();
+      allow list: if isSignedIn() && (resource.data.customerId == request.auth.uid || resource.data.restaurantOwnerId == request.auth.uid || isSuperAdmin());
+      allow create: if isSignedIn() && (request.resource.data.customerId == request.auth.uid || isSuperAdmin());
+      allow update: if isSignedIn() && (resource.data.customerId == request.auth.uid || resource.data.restaurantOwnerId == request.auth.uid || isSuperAdmin());
       allow delete: if isSuperAdmin();
     }
 

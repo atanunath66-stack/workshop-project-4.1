@@ -16,7 +16,7 @@ import {
 
 export const INITIAL_USERS: User[] = [
   {
-    id: 'admin-atanunath66',
+    id: 'user-atanunath66',
     name: 'Atanu Nath (Admin)',
     email: 'atanunath66@gmail.com',
     role: 'admin',

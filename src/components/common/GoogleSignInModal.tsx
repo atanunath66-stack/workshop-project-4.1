@@ -44,13 +44,14 @@ export const GoogleSignInModal: React.FC<Props> = ({
   targetRole = 'customer',
   onSuccess,
 }) => {
-  const { loginUser } = useApp();
+  const { loginUser, signInWithGoogle } = useApp();
   const [selectedRole, setSelectedRole] = useState<UserRole>(targetRole);
   const [mode, setMode] = useState<'chooser' | 'custom'>('chooser');
   const [customName, setCustomName] = useState('');
   const [customEmail, setCustomEmail] = useState('');
   const [customPhone, setCustomPhone] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   // Keep selectedRole in sync with targetRole when opened
   React.useEffect(() => {
@@ -61,30 +62,41 @@ export const GoogleSignInModal: React.FC<Props> = ({
 
   if (!isOpen) return null;
 
-  const handleSelectAccount = (account: SavedGoogleAccount) => {
-    loginUser(account.email, account.name, selectedRole, {
-      phone: selectedRole === 'owner' ? '+91 98450 11223' : '+91 98765 43210',
-    });
-    if (onSuccess) onSuccess();
-    onClose();
+  const handleSelectAccount = async (account: SavedGoogleAccount) => {
+    setIsLoading(true);
+    setError('');
+    try {
+      const res = await signInWithGoogle(selectedRole);
+      if (res.success) {
+        if (onSuccess) onSuccess();
+        onClose();
+      } else {
+        setError(res.error || 'Google Sign-In was cancelled or blocked by browser.');
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Authentication error.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleCustomSubmit = (e: React.FormEvent) => {
+  const handleCustomSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     setError('');
-
-    const cleanEmail = customEmail.trim().toLowerCase();
-    if (!cleanEmail || !cleanEmail.includes('@')) {
-      setError('Please enter a valid Google email address (e.g. yourname@gmail.com)');
-      return;
+    try {
+      const res = await signInWithGoogle(selectedRole);
+      if (res.success) {
+        if (onSuccess) onSuccess();
+        onClose();
+      } else {
+        setError(res.error || 'Google Sign-In was cancelled or blocked by browser.');
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Authentication error.');
+    } finally {
+      setIsLoading(false);
     }
-
-    const cleanName = customName.trim() || cleanEmail.split('@')[0];
-    loginUser(cleanEmail, cleanName, selectedRole, {
-      phone: customPhone.trim() || '+91 98220 54321',
-    });
-    if (onSuccess) onSuccess();
-    onClose();
   };
 
   const filteredPresets = DEFAULT_GOOGLE_PRESETS.filter(

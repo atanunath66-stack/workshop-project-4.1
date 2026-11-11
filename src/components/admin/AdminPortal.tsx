@@ -53,6 +53,8 @@ export const AdminPortal: React.FC = () => {
     adminLogout,
     refreshPlatformData,
     exportDataToCsv,
+    firebaseUser,
+    signInWithGoogle,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'approvals' | 'data_management' | 'discounts' | 'refunds' | 'audit'>('approvals');
@@ -336,6 +338,29 @@ export const AdminPortal: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Live Firebase Auth Session Check */}
+      {!firebaseUser && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-amber-200 text-xs">
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+            <div>
+              <span className="font-bold block text-stone-900">Live Firebase Firestore Permissions Notice</span>
+              <span className="text-stone-600 text-[11px]">
+                Sign in with an authorized Google Account (atanuhuhu@gmail.com / atanunath66@gmail.com) to establish real-time Firestore admin permissions.
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => signInWithGoogle('admin')}
+            className="px-4 py-2 bg-[#34343A] hover:bg-[#232328] text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-xs shrink-0 cursor-pointer"
+          >
+            <ShieldCheck className="w-4 h-4 text-[#E8A0B5]" />
+            <span>Connect Google Super Admin</span>
+          </button>
+        </div>
+      )}
 
       {/* Admin Nav Tabs */}
       <div className="flex items-center gap-2 border-b border-[#E8E8EC] pb-2 overflow-x-auto no-scrollbar">

@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "test": "npx tsx src/utils/cancellationAndPricing.test.ts && npx tsx src/utils/approvalAndAuth.test.ts"
+    "test": "npx tsx src/utils/cancellationAndPricing.test.ts && npx tsx src/utils/approvalAndAuth.test.ts && npx tsx src/utils/registrationAuth.test.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

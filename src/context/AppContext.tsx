@@ -48,6 +48,7 @@ import {
   FirebaseUser,
   onAuthStateChanged,
   doc,
+  getDoc,
   collection,
   query,
   where,
@@ -60,6 +61,17 @@ import {
   handleFirestoreError,
   OperationType,
 } from '../lib/firebase';
+
+export const SUPER_ADMIN_EMAILS = [
+  'atanunath66@gmail.com',
+  'atanunath44@gmail.com',
+  'atanuhuhu@gmail.com',
+];
+
+export const isAuthorizedAdminEmail = (email?: string | null): boolean => {
+  if (!email) return false;
+  return SUPER_ADMIN_EMAILS.includes(email.trim().toLowerCase());
+};
 
 const STORAGE_KEYS = {
   CURRENT_USER: 'alookhaoge_current_user_v3',
@@ -332,21 +344,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setFirebaseUser(user);
       if (user) {
         setIsLoggedIn(true);
-        // Sync or retrieve user profile
+
+        const isSuper = isAuthorizedAdminEmail(user.email);
+        let hasAdminDoc = false;
         try {
-          const userDocSnap = await getDocs(collection(db, 'users'));
-          const found = userDocSnap.docs.find((d) => d.id === user.uid);
-          if (found) {
-            const data = found.data() as User;
-            setCurrentUser(data);
-            localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(data));
+          const adminDocSnap = await getDoc(doc(db, 'admins', user.uid));
+          hasAdminDoc = adminDocSnap.exists();
+        } catch {}
+
+        const isAdmin = isSuper || hasAdminDoc;
+        if (isAdmin) {
+          setIsAdminAuthenticated(true);
+          localStorage.setItem(STORAGE_KEYS.ADMIN_AUTH, 'true');
+          // Self-heal / guarantee /admins/{uid} document exists in Firestore
+          if (!hasAdminDoc) {
+            setDoc(doc(db, 'admins', user.uid), {
+              email: user.email,
+              role: 'admin',
+              uid: user.uid,
+              createdAt: new Date().toISOString(),
+            }).catch(() => {});
+          }
+        }
+
+        // Retrieve or initialize user profile using single document read (doc by user.uid)
+        try {
+          const userDocSnap = await getDoc(doc(db, 'users', user.uid));
+          if (userDocSnap.exists()) {
+            const data = userDocSnap.data() as User;
+            const updatedProfile: User = {
+              ...data,
+              id: user.uid,
+              role: isAdmin ? 'admin' : (data.role || authModalRole || 'customer'),
+            };
+            setCurrentUser(updatedProfile);
+            localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(updatedProfile));
           } else {
             const newProfile: User = {
               id: user.uid,
               name: user.displayName || user.email?.split('@')[0] || (user.phoneNumber ? `User ${user.phoneNumber.slice(-4)}` : 'Verified Diner'),
               email: user.email || '',
               phone: user.phoneNumber || '',
-              role: (user.email === 'atanunath66@gmail.com' || user.email === 'atanunath44@gmail.com' ? 'admin' : (authModalRole || 'customer')),
+              role: isAdmin ? 'admin' : (authModalRole || 'customer'),
               authProvider: user.phoneNumber ? 'phone' : 'google',
               createdAt: new Date().toISOString(),
             };
@@ -356,14 +395,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               console.warn('Failed saving user doc:', e);
             });
           }
-        } catch {
-          // Fallback to local profile
+        } catch (err) {
+          console.warn('User profile retrieval error:', err);
           const fallbackProfile: User = {
             id: user.uid,
             name: user.displayName || user.email?.split('@')[0] || 'Verified User',
             email: user.email || '',
             phone: user.phoneNumber || '',
-            role: authModalRole || 'customer',
+            role: isAdmin ? 'admin' : (authModalRole || 'customer'),
             authProvider: user.phoneNumber ? 'phone' : 'google',
             createdAt: new Date().toISOString(),
           };
@@ -382,11 +421,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (!isAdminAuthenticated) {
           const stored = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
           if (stored) {
-            const parsed = JSON.parse(stored);
-            if (parsed.id === 'guest') {
-              setIsLoggedIn(false);
-              setCurrentUser(GUEST_USER);
-            }
+            try {
+              const parsed = JSON.parse(stored);
+              if (parsed.id === 'guest') {
+                setIsLoggedIn(false);
+                setCurrentUser(GUEST_USER);
+              }
+            } catch {}
           }
         }
       }
@@ -397,78 +438,141 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Firestore Real-Time Listener for Restaurants
   useEffect(() => {
+    const unsubs: (() => void)[] = [];
     try {
       const isSuper =
-        isAdminAuthenticated ||
-        (firebaseUser &&
-          (firebaseUser.email === 'atanunath66@gmail.com' || firebaseUser.email === 'atanunath44@gmail.com'));
+        firebaseUser &&
+        (isAuthorizedAdminEmail(firebaseUser.email) || isAdminAuthenticated);
+
+      if (isSuper) {
+        // Super Admin queries entire restaurants collection
+        const q = collection(db, 'restaurants');
+        const unsub = onSnapshot(
+          q,
+          (snapshot) => {
+            const firestoreRests: Restaurant[] = [];
+            snapshot.forEach((d) => {
+              firestoreRests.push({ ...(d.data() as Restaurant), id: d.id });
+            });
+            setRestaurants(firestoreRests);
+            logRestaurantEvent('Real-time restaurants snapshot received (Super Admin)', {
+              count: firestoreRests.length,
+              isSuper: true,
+            });
+          },
+          (error) => {
+            logRestaurantEvent('Firestore restaurants snapshot listener error (Super Admin)', {
+              message: error?.message,
+              code: (error as any)?.code,
+            });
+          }
+        );
+        unsubs.push(unsub);
+      } else if (firebaseUser) {
+        // Authenticated user (Store Owner or Customer)
+        let activeRests: Restaurant[] = [];
+        let ownerRests: Restaurant[] = [];
+
+        const updateCombined = () => {
+          const map = new Map<string, Restaurant>();
+          activeRests.forEach((r) => map.set(r.id, r));
+          ownerRests.forEach((r) => map.set(r.id, r));
+          setRestaurants(Array.from(map.values()));
+        };
+
+        // 1. Listen to all ACTIVE public listings
+        const activeQ = query(collection(db, 'restaurants'), where('status', '==', 'ACTIVE'));
+        const unsubActive = onSnapshot(
+          activeQ,
+          (snapshot) => {
+            activeRests = [];
+            snapshot.forEach((d) => {
+              activeRests.push({ ...(d.data() as Restaurant), id: d.id });
+            });
+            updateCombined();
+          },
+          (err) => console.warn('Active restaurants listener:', err?.message)
+        );
+        unsubs.push(unsubActive);
+
+        // 2. Listen to listings owned by this user (including PENDING_APPROVAL)
+        const ownerQ = query(collection(db, 'restaurants'), where('ownerId', '==', firebaseUser.uid));
+        const unsubOwner = onSnapshot(
+          ownerQ,
+          (snapshot) => {
+            ownerRests = [];
+            snapshot.forEach((d) => {
+              ownerRests.push({ ...(d.data() as Restaurant), id: d.id });
+            });
+            updateCombined();
+            logRestaurantEvent('Real-time owner restaurants snapshot received', {
+              count: ownerRests.length,
+              ownerUid: firebaseUser.uid,
+            });
+          },
+          (err) => console.warn('Owner restaurants listener:', err?.message)
+        );
+        unsubs.push(unsubOwner);
+      } else {
+        // Guest/Public: only active listings
+        const publicQ = query(collection(db, 'restaurants'), where('status', '==', 'ACTIVE'));
+        const unsubPublic = onSnapshot(
+          publicQ,
+          (snapshot) => {
+            const list: Restaurant[] = [];
+            snapshot.forEach((d) => {
+              list.push({ ...(d.data() as Restaurant), id: d.id });
+            });
+            setRestaurants(list);
+          },
+          (err) => console.warn('Public restaurants listener:', err?.message)
+        );
+        unsubs.push(unsubPublic);
+      }
+    } catch (e) {
+      logRestaurantEvent('Firestore listener setup error', { error: String(e) });
+    }
+
+    return () => {
+      unsubs.forEach((u) => u());
+    };
+  }, [isAdminAuthenticated, firebaseUser, currentUser.id]);
+
+  // Firestore Real-Time Listener for Bookings
+  useEffect(() => {
+    if (!firebaseUser) return;
+    try {
+      const isSuper =
+        firebaseUser &&
+        (isAuthorizedAdminEmail(firebaseUser.email) || isAdminAuthenticated);
 
       const q = isSuper
-        ? collection(db, 'restaurants')
-        : query(collection(db, 'restaurants'), where('status', '==', 'ACTIVE'));
+        ? collection(db, 'bookings')
+        : currentUser.role === 'owner'
+        ? query(collection(db, 'bookings'), where('restaurantOwnerId', '==', firebaseUser.uid))
+        : query(collection(db, 'bookings'), where('customerId', '==', firebaseUser.uid));
 
       const unsub = onSnapshot(
         q,
         (snapshot) => {
-          const firestoreRests: Restaurant[] = [];
+          const firestoreBookings: Booking[] = [];
           snapshot.forEach((d) => {
-            firestoreRests.push({ ...(d.data() as Restaurant), id: d.id });
+            firestoreBookings.push({ ...(d.data() as Booking), id: d.id });
           });
-          setRestaurants((prev) => {
-            if (isSuper) return firestoreRests;
-            // Retain pending/rejected listings submitted by current user session
-            const pendingOrOwned = prev.filter(
-              (r) => r.status !== 'ACTIVE' && (r.ownerId === (firebaseUser?.uid || currentUser.id) || !r.status)
-            );
-            const liveIds = new Set(firestoreRests.map((r) => r.id));
-            const localPending = pendingOrOwned.filter((r) => !liveIds.has(r.id));
-            return [...firestoreRests, ...localPending];
-          });
-          logRestaurantEvent('Real-time restaurants snapshot received', {
-            count: firestoreRests.length,
-            isSuper,
-          });
+          setBookings(firestoreBookings);
+          try {
+            localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(firestoreBookings));
+          } catch {}
         },
         (error) => {
-          logRestaurantEvent('Firestore restaurants snapshot listener error', {
-            message: error?.message,
-            code: (error as any)?.code,
-          });
-        }
-      );
-      return () => unsub();
-    } catch (e) {
-      logRestaurantEvent('Firestore listener setup error', { error: String(e) });
-    }
-  }, [isAdminAuthenticated, firebaseUser, currentUser.id]);
-
-  // Firestore Real-Time Listener for Bookings (only attached when authenticated per Firebase skill)
-  useEffect(() => {
-    if (!firebaseUser && !isAdminAuthenticated) return;
-    try {
-      const unsub = onSnapshot(
-        collection(db, 'bookings'),
-        (snapshot) => {
-          if (!snapshot.empty) {
-            const firestoreBookings: Booking[] = [];
-            snapshot.forEach((d) => {
-              firestoreBookings.push({ ...(d.data() as Booking), id: d.id });
-            });
-            setBookings(firestoreBookings);
-            try {
-              localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(firestoreBookings));
-            } catch {}
-          }
-        },
-        (error) => {
-          console.warn('Firestore bookings snapshot listener:', error?.message);
+          console.warn('Firestore bookings snapshot listener error:', error?.message);
         }
       );
       return () => unsub();
     } catch (e) {
       console.warn('Firestore bookings listener setup error:', e);
     }
-  }, [firebaseUser, isAdminAuthenticated]);
+  }, [firebaseUser, isAdminAuthenticated, currentUser.role]);
 
   // Sync to localStorage as robust offline cache
   useEffect(() => {
@@ -556,7 +660,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
-      const role = (user.email === 'atanunath66@gmail.com' || user.email === 'atanunath44@gmail.com') ? 'admin' : intendedRole;
+      const isSuper = isAuthorizedAdminEmail(user.email);
+      let hasAdminDoc = false;
+      try {
+        const adminDocSnap = await getDoc(doc(db, 'admins', user.uid));
+        hasAdminDoc = adminDocSnap.exists();
+      } catch {}
+
+      const isAdmin = isSuper || hasAdminDoc;
+      const role: UserRole = isAdmin ? 'admin' : intendedRole;
+
+      if (isAdmin) {
+        setIsAdminAuthenticated(true);
+        localStorage.setItem(STORAGE_KEYS.ADMIN_AUTH, 'true');
+        if (!hasAdminDoc) {
+          setDoc(doc(db, 'admins', user.uid), {
+            email: user.email,
+            role: 'admin',
+            uid: user.uid,
+            createdAt: new Date().toISOString(),
+          }).catch(() => {});
+        }
+      }
 
       const profile: User = {
         id: user.uid,
@@ -571,6 +696,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       setCurrentUser(profile);
       setIsLoggedIn(true);
+      localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(profile));
 
       // Save in Firestore
       try {
@@ -817,16 +943,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     setIsAdminAuthenticated(true);
+    localStorage.setItem(STORAGE_KEYS.ADMIN_AUTH, 'true');
+
+    // Use actual authenticated Firebase UID if present, or clean session ID (no pseudo-UIDs)
+    const effectiveId = auth.currentUser?.uid || `admin-session-${Date.now().toString().slice(-6)}`;
     const adminUser: User = {
-      id: 'admin-atanunath66',
+      id: effectiveId,
       name: 'Super Admin',
-      email: SUPER_ADMIN_CREDENTIALS.EMAIL,
+      email: email.trim(),
       role: 'admin',
       authProvider: 'email',
       createdAt: new Date().toISOString(),
     };
     setCurrentUser(adminUser);
     setIsLoggedIn(true);
+    localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(adminUser));
     setIsAdminLoginModalOpen(false);
     addAuditLog('ADMIN_CONSOLE_UNLOCKED', 'settings', 'admin-session', 'Master credentials authenticated successfully');
     return { success: true };
@@ -844,9 +975,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     newRestData: Omit<Restaurant, 'id' | 'createdAt' | 'status' | 'averageRating' | 'totalReviews'>
   ): Promise<Restaurant> => {
     const restId = `rest-${Date.now().toString().slice(-6)}`;
-    const realOwnerUid =
-      auth.currentUser?.uid ||
-      (currentUser.id && currentUser.id !== 'guest' ? currentUser.id : `owner-${Date.now().toString().slice(-6)}`);
+    
+    // Strict requirement: verify real authenticated Firebase UID
+    const realOwnerUid = auth.currentUser?.uid;
+    if (!realOwnerUid) {
+      const authError = new Error('Authentication required: You must be signed in with a verified account to register a restaurant.');
+      logRestaurantEvent('Registration aborted: No authenticated Firebase user', { name: newRestData.name });
+      throw authError;
+    }
 
     logRestaurantEvent('Registration submitted', {
       name: newRestData.name,
@@ -876,7 +1012,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const newRest: Restaurant = {
       ...newRestData,
       id: restId,
-      ownerId: realOwnerUid,
+      ownerId: realOwnerUid, // strictly matches request.auth.uid in Firestore
       status: 'PENDING_APPROVAL', // Canonical requirement
       location: locationObj,
       averageRating: 0,
@@ -898,20 +1034,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         error: err?.message,
         code: err?.code,
         restId,
+        ownerId: realOwnerUid,
       });
-      // Throw error to allow UI to notify the user
-      throw err;
+      handleFirestoreError(err, OperationType.CREATE, `restaurants/${restId}`);
     }
 
     // Update local state immediately for instant UI feedback
-    setRestaurants((prev) => [newRest, ...prev]);
+    setRestaurants((prev) => [newRest, ...prev.filter((r) => r.id !== restId)]);
 
     // Link restaurantId to owner
     updateUserProfile({ restaurantId: restId });
 
     // Notify Super Admin
     sendNotification(
-      'admin-atanunath66',
+      'admin',
       'admin',
       'New Restaurant Registration Pending 🔔',
       `"${newRest.name}" by ${newRest.ownerName} submitted for verification.`,
@@ -1573,35 +1709,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const refreshPlatformData = async () => {
     try {
       const isSuper =
-        isAdminAuthenticated ||
-        (firebaseUser &&
-          (firebaseUser.email === 'atanunath66@gmail.com' || firebaseUser.email === 'atanunath44@gmail.com'));
-      const q = isSuper
-        ? collection(db, 'restaurants')
-        : query(collection(db, 'restaurants'), where('status', '==', 'ACTIVE'));
+        firebaseUser &&
+        (isAuthorizedAdminEmail(firebaseUser.email) || isAdminAuthenticated);
 
-      logRestaurantEvent('Platform data refresh started', { isSuper });
-      const snap = await getDocs(q);
-      const list: Restaurant[] = [];
-      snap.forEach((d) => list.push({ ...(d.data() as Restaurant), id: d.id }));
-      setRestaurants((prev) => {
-        if (isSuper) return list;
-        const pendingOrOwned = prev.filter(
-          (r) => r.status !== 'ACTIVE' && (r.ownerId === (firebaseUser?.uid || currentUser.id) || !r.status)
-        );
-        const liveIds = new Set(list.map((r) => r.id));
-        const localPending = pendingOrOwned.filter((r) => !liveIds.has(r.id));
-        return [...list, ...localPending];
-      });
-      logRestaurantEvent('Platform data refresh finished: retrieved records', { count: list.length });
-      try {
-        localStorage.setItem(STORAGE_KEYS.RESTAURANTS, JSON.stringify(list));
-      } catch {}
+      if (isSuper) {
+        logRestaurantEvent('Platform data refresh started (Super Admin)', { isSuper: true });
+        const snap = await getDocs(collection(db, 'restaurants'));
+        const list: Restaurant[] = [];
+        snap.forEach((d) => list.push({ ...(d.data() as Restaurant), id: d.id }));
+        setRestaurants(list);
+        logRestaurantEvent('Platform data refresh finished: retrieved records', { count: list.length });
+        try {
+          localStorage.setItem(STORAGE_KEYS.RESTAURANTS, JSON.stringify(list));
+        } catch {}
+      } else if (firebaseUser) {
+        logRestaurantEvent('Platform data refresh started (Owner/User)', { uid: firebaseUser.uid });
+        const [activeSnap, ownerSnap] = await Promise.all([
+          getDocs(query(collection(db, 'restaurants'), where('status', '==', 'ACTIVE'))),
+          getDocs(query(collection(db, 'restaurants'), where('ownerId', '==', firebaseUser.uid))),
+        ]);
+        const map = new Map<string, Restaurant>();
+        activeSnap.forEach((d) => map.set(d.id, { ...(d.data() as Restaurant), id: d.id }));
+        ownerSnap.forEach((d) => map.set(d.id, { ...(d.data() as Restaurant), id: d.id }));
+        const list = Array.from(map.values());
+        setRestaurants(list);
+        logRestaurantEvent('Platform data refresh finished: retrieved records', { count: list.length });
+      } else {
+        const snap = await getDocs(query(collection(db, 'restaurants'), where('status', '==', 'ACTIVE')));
+        const list: Restaurant[] = [];
+        snap.forEach((d) => list.push({ ...(d.data() as Restaurant), id: d.id }));
+        setRestaurants(list);
+      }
     } catch (err: any) {
       logRestaurantEvent('Platform data refresh failed', {
         message: err?.message,
         code: err?.code,
       });
+      console.warn('refreshPlatformData error:', err);
     }
   };
 
