@@ -1,74 +1,114 @@
+
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Default deny catch-all: any document not explicitly permitted is blocked
+    // --------------------------------------------------
+    // DEFAULT DENY
+    // --------------------------------------------------
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // -------------------------------------------------------------------------
-    // Helper Functions
-    // -------------------------------------------------------------------------
+    // --------------------------------------------------
+    // AUTHENTICATION & ADMIN HELPERS
+    // --------------------------------------------------
+
     function isSignedIn() {
-      return request.auth != null && request.auth.uid != null;
+      return request.auth != null;
     }
 
-    // 1. Admin Security: Only trusted, verified admin accounts or securely
-    // assigned custom claims can have admin access. No self-promotion through
-    // Firestore documents or user profiles.
     function isSuperAdmin() {
       return isSignedIn() && (
         (
-          request.auth.token.email_verified == true && (
-            request.auth.token.email == 'atanunath66@gmail.com' ||
-            request.auth.token.email == 'atanunath44@gmail.com' ||
-            request.auth.token.email == 'atanuhuhu@gmail.com'
-          )
+          request.auth.token.email_verified == true &&
+          request.auth.token.email in [
+            'atanunath66@gmail.com',
+            'atanunath44@gmail.com',
+            'atanuhuhu@gmail.com'
+          ]
         ) ||
-        (request.auth.token.keys().hasAll(['admin']) && request.auth.token.admin == true) ||
-        (request.auth.token.keys().hasAll(['role']) && request.auth.token.role == 'admin')
+        (
+          request.auth.token.keys().hasAll(['admin']) &&
+          request.auth.token.admin == true
+        ) ||
+        (
+          request.auth.token.keys().hasAll(['role']) &&
+          request.auth.token.role == 'admin'
+        )
       );
     }
 
     function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+      return isSignedIn() &&
+        request.auth.uid == userId;
+    }
+
+    function isRestaurantOwner(restaurantId) {
+      return isSignedIn() &&
+        exists(
+          /databases/$(database)/documents/restaurants/$(restaurantId)
+        ) &&
+        get(
+          /databases/$(database)/documents/restaurants/$(restaurantId)
+        ).data.ownerId == request.auth.uid;
     }
 
     function isRestaurantOwnerForBooking() {
       return isSignedIn() && (
-        ('restaurantOwnerId' in resource.data && resource.data.restaurantOwnerId == request.auth.uid) ||
-        ('restaurantId' in resource.data &&
-          exists(/databases/$(database)/documents/restaurants/$(resource.data.restaurantId)) &&
-          get(/databases/$(database)/documents/restaurants/$(resource.data.restaurantId)).data.ownerId == request.auth.uid)
+        (
+          'restaurantOwnerId' in resource.data &&
+          resource.data.restaurantOwnerId == request.auth.uid
+        ) ||
+        (
+          'restaurantId' in resource.data &&
+          isRestaurantOwner(resource.data.restaurantId)
+        )
       );
     }
 
-    // Sequential booking lifecycle transition validator
+    // --------------------------------------------------
+    // BOOKING STATUS TRANSITIONS
+    // --------------------------------------------------
+
     function isValidOwnerBookingStatusTransition(currentStatus, nextStatus) {
-      return nextStatus == currentStatus ||
-        (currentStatus == 'PENDING' && (nextStatus == 'ACCEPTED' || nextStatus == 'REJECTED')) ||
-        (currentStatus == 'CONFIRMED' && (nextStatus == 'ACCEPTED' || nextStatus == 'REJECTED')) ||
-        (currentStatus == 'ACCEPTED' && (nextStatus == 'CUSTOMER ARRIVING' || nextStatus == 'ARRIVED' || nextStatus == 'REJECTED')) ||
-        (currentStatus == 'CUSTOMER ARRIVING' && (nextStatus == 'ARRIVED' || nextStatus == 'REJECTED')) ||
-        (currentStatus == 'ARRIVED' && (nextStatus == 'SERVED' || nextStatus == 'COMPLETED')) ||
-        (currentStatus == 'SERVED' && nextStatus == 'COMPLETED');
+      return
+        nextStatus == currentStatus ||
+
+        (currentStatus == 'PENDING' &&
+          nextStatus in ['ACCEPTED', 'REJECTED']) ||
+
+        (currentStatus == 'CONFIRMED' &&
+          nextStatus in ['ACCEPTED', 'REJECTED']) ||
+
+        (currentStatus == 'ACCEPTED' &&
+          nextStatus in ['CUSTOMER ARRIVING', 'ARRIVED', 'REJECTED']) ||
+
+        (currentStatus == 'CUSTOMER ARRIVING' &&
+          nextStatus in ['ARRIVED', 'REJECTED']) ||
+
+        (currentStatus == 'ARRIVED' &&
+          nextStatus in ['SERVED', 'COMPLETED']) ||
+
+        (currentStatus == 'SERVED' &&
+          nextStatus == 'COMPLETED');
     }
 
-    // -------------------------------------------------------------------------
-    // Field-level Validation Helpers
-    // -------------------------------------------------------------------------
+    // --------------------------------------------------
+    // RESTAURANT CREATION
+    // --------------------------------------------------
 
-    // 2. Owner Security & Restaurant Security:
-    // Validate restaurant creation using an explicit allowed-field list.
-    // Prevent owners from submitting admin, approval, payment or settlement fields.
-    // Status must strictly be PENDING_APPROVAL.
     function isAllowedRestaurantCreate() {
       return isSignedIn() &&
+
         request.resource.data.ownerId == request.auth.uid &&
+
         request.resource.data.status == 'PENDING_APPROVAL' &&
+
         request.resource.data.name is string &&
         request.resource.data.name.size() > 0 &&
+
         request.resource.data.keys().hasOnly([
           'id',
           'name',
@@ -90,8 +130,6 @@ service cloud.firestore {
           'categories',
           'openingTime',
           'closingTime',
-          'averageRating',
-          'totalReviews',
           'priceForTwo',
           'status',
           'facilities',
@@ -99,58 +137,68 @@ service cloud.firestore {
           'menu',
           'totalTables',
           'availableTables',
-          'featured',
           'discountOffer',
           'createdAt',
           'updatedAt'
         ]);
     }
 
-    // 3. Restaurant Security:
-    // Owners cannot modify approval status, ratings, review counts, featured status,
-    // platform commissions, or settlement fields (upiId). Only profile & menu fields permitted.
+    // --------------------------------------------------
+    // RESTAURANT OWNER UPDATES
+    // --------------------------------------------------
+
     function isAllowedRestaurantOwnerUpdate() {
       return isSignedIn() &&
+
         resource.data.ownerId == request.auth.uid &&
+
         request.resource.data.ownerId == resource.data.ownerId &&
+
         request.resource.data.status == resource.data.status &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'name',
-          'tagline',
-          'description',
-          'phone',
-          'ownerPhone',
-          'email',
-          'address',
-          'area',
-          'city',
-          'lat',
-          'lng',
-          'location',
-          'coverImage',
-          'galleryImages',
-          'categories',
-          'openingTime',
-          'closingTime',
-          'priceForTwo',
-          'facilities',
-          'cancellationPolicy',
-          'menu',
-          'totalTables',
-          'availableTables',
-          'updatedAt'
-        ]);
+
+        request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly([
+            'name',
+            'tagline',
+            'description',
+            'phone',
+            'ownerPhone',
+            'email',
+            'address',
+            'area',
+            'city',
+            'lat',
+            'lng',
+            'location',
+            'coverImage',
+            'galleryImages',
+            'categories',
+            'openingTime',
+            'closingTime',
+            'priceForTwo',
+            'facilities',
+            'cancellationPolicy',
+            'menu',
+            'totalTables',
+            'availableTables',
+            'updatedAt'
+          ]);
     }
 
-    // 4 & 5. Booking & Payment Security:
-    // Customers can create only PENDING bookings.
-    // Prevent clients from supplying payment transaction IDs, paidAt timestamps,
-    // verified payment flags, refund, commission, trusted pricing, or settlement fields.
+    // --------------------------------------------------
+    // BOOKING CREATION
+    // --------------------------------------------------
+
     function isAllowedBookingCreate() {
       return isSignedIn() &&
+
         request.resource.data.customerId == request.auth.uid &&
+
         request.resource.data.status == 'PENDING' &&
+
         request.resource.data.paymentStatus == 'PENDING' &&
+
         request.resource.data.keys().hasOnly([
           'id',
           'receiptNumber',
@@ -178,140 +226,211 @@ service cloud.firestore {
         ]);
     }
 
-    // Customer Booking Updates: Customers may only cancel eligible bookings and
-    // update location-sharing or notes. Cannot touch payments, refunds, or financial terms.
+    // --------------------------------------------------
+    // CUSTOMER BOOKING UPDATES
+    // --------------------------------------------------
+
     function isAllowedCustomerBookingUpdate() {
       return isSignedIn() &&
+
         resource.data.customerId == request.auth.uid &&
+
         request.resource.data.customerId == resource.data.customerId &&
+
         request.resource.data.restaurantId == resource.data.restaurantId &&
-        (!('restaurantOwnerId' in resource.data) || request.resource.data.restaurantOwnerId == resource.data.restaurantOwnerId) &&
+
+        (
+          !('restaurantOwnerId' in resource.data) ||
+          request.resource.data.restaurantOwnerId ==
+            resource.data.restaurantOwnerId
+        ) &&
+
         (
           request.resource.data.status == resource.data.status ||
-          (resource.data.status in ['PENDING', 'CONFIRMED', 'ACCEPTED'] && request.resource.data.status == 'CANCELLED')
+
+          (
+            resource.data.status in [
+              'PENDING',
+              'CONFIRMED',
+              'ACCEPTED'
+            ] &&
+            request.resource.data.status == 'CANCELLED'
+          )
         ) &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'status',
-          'cancellationReason',
-          'customerLocationShared',
-          'customerCurrentLocation',
-          'updatedAt'
-        ]);
+
+        request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly([
+            'status',
+            'cancellationReason',
+            'customerLocationShared',
+            'customerCurrentLocation',
+            'updatedAt'
+          ]);
     }
 
-    // Restaurant Owner Booking Updates: sequential lifecycle status transitions only
+    // --------------------------------------------------
+    // RESTAURANT OWNER BOOKING UPDATES
+    // --------------------------------------------------
+
     function isAllowedRestaurantOwnerBookingUpdate() {
       return isSignedIn() &&
+
         isRestaurantOwnerForBooking() &&
+
         request.resource.data.customerId == resource.data.customerId &&
+
         request.resource.data.restaurantId == resource.data.restaurantId &&
-        (!('restaurantOwnerId' in resource.data) || request.resource.data.restaurantOwnerId == resource.data.restaurantOwnerId) &&
-        isValidOwnerBookingStatusTransition(resource.data.status, request.resource.data.status) &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'status',
-          'rejectionReason',
-          'suggestedAlternativeTime',
-          'updatedAt'
-        ]);
+
+        (
+          !('restaurantOwnerId' in resource.data) ||
+          request.resource.data.restaurantOwnerId ==
+            resource.data.restaurantOwnerId
+        ) &&
+
+        isValidOwnerBookingStatusTransition(
+          resource.data.status,
+          request.resource.data.status
+        ) &&
+
+        request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly([
+            'status',
+            'rejectionReason',
+            'suggestedAlternativeTime',
+            'updatedAt'
+          ]);
     }
 
-    // -------------------------------------------------------------------------
-    // Health / Diagnostics
-    // -------------------------------------------------------------------------
-    match /test/{docId} {
-      allow read: if isSignedIn();
-      allow write: if isSuperAdmin();
-    }
+    // --------------------------------------------------
+    // USERS
+    // --------------------------------------------------
 
-    // -------------------------------------------------------------------------
-    // Users Collection
-    // - Self-management of profiles with strict role protection (cannot self-assign admin)
-    // -------------------------------------------------------------------------
     match /users/{userId} {
-      allow get: if isOwner(userId) || isSuperAdmin();
+
+      allow get: if
+        isOwner(userId) || isSuperAdmin();
+
       allow list: if isSuperAdmin();
-      
+
+      // Users can create customer profiles.
+      // Owner promotion must be performed by an admin.
       allow create: if isSuperAdmin() || (
         isOwner(userId) &&
         request.resource.data.id == userId &&
-        (!('role' in request.resource.data) || request.resource.data.role in ['customer', 'owner'])
+        (
+          !('role' in request.resource.data) ||
+          request.resource.data.role == 'customer'
+        )
       );
-      
+
+      // Users cannot promote themselves to owner or admin.
       allow update: if isSuperAdmin() || (
         isOwner(userId) &&
         request.resource.data.id == resource.data.id &&
-        (!('role' in request.resource.data) || 
-         request.resource.data.role == resource.data.role || 
-         (resource.data.role != 'admin' && request.resource.data.role in ['customer', 'owner']))
+        (
+          !('role' in request.resource.data) ||
+          request.resource.data.role == resource.data.role
+        )
       );
-      
+
       allow delete: if isSuperAdmin();
     }
 
-    // -------------------------------------------------------------------------
-    // Restaurants Collection
-    // -------------------------------------------------------------------------
+    // --------------------------------------------------
+    // RESTAURANTS
+    // --------------------------------------------------
+
     match /restaurants/{restaurantId} {
-      allow get: if resource.data.status == 'ACTIVE' || 
-                 (isSignedIn() && (resource.data.ownerId == request.auth.uid || isSuperAdmin()));
-      
-      allow list: if resource.data.status == 'ACTIVE' || 
-                  (isSignedIn() && (resource.data.ownerId == request.auth.uid || isSuperAdmin()));
-      
-      allow create: if isSuperAdmin() || isAllowedRestaurantCreate();
-      
-      allow update: if isSuperAdmin() || isAllowedRestaurantOwnerUpdate();
-      
+
+      allow get, list: if
+        resource.data.status == 'ACTIVE' ||
+        (
+          isSignedIn() &&
+          resource.data.ownerId == request.auth.uid
+        ) ||
+        isSuperAdmin();
+
+      allow create: if
+        isSuperAdmin() ||
+        isAllowedRestaurantCreate();
+
+      allow update: if
+        isSuperAdmin() ||
+        isAllowedRestaurantOwnerUpdate();
+
       allow delete: if isSuperAdmin();
     }
 
-    // -------------------------------------------------------------------------
-    // Bookings Collection
-    // -------------------------------------------------------------------------
+    // --------------------------------------------------
+    // BOOKINGS
+    // --------------------------------------------------
+
     match /bookings/{bookingId} {
-      allow get: if isSignedIn() && (
+
+      allow get, list: if isSignedIn() && (
         resource.data.customerId == request.auth.uid ||
         isRestaurantOwnerForBooking() ||
         isSuperAdmin()
       );
-      
-      allow list: if isSignedIn() && (
-        resource.data.customerId == request.auth.uid ||
-        isRestaurantOwnerForBooking() ||
-        isSuperAdmin()
-      );
-      
-      allow create: if isSuperAdmin() || isAllowedBookingCreate();
-      
-      allow update: if isSuperAdmin() || 
-                    isAllowedCustomerBookingUpdate() || 
-                    isAllowedRestaurantOwnerBookingUpdate();
-      
+
+      allow create: if
+        isSuperAdmin() ||
+        isAllowedBookingCreate();
+
+      allow update: if
+        isSuperAdmin() ||
+        isAllowedCustomerBookingUpdate() ||
+        isAllowedRestaurantOwnerBookingUpdate();
+
       allow delete: if isSuperAdmin();
     }
 
-    // -------------------------------------------------------------------------
-    // Promotional Discount Campaigns
-    // -------------------------------------------------------------------------
+    // --------------------------------------------------
+    // DISCOUNTS
+    // --------------------------------------------------
+
     match /discounts/{discountId} {
-      allow read: if resource.data.isActive == true || isSuperAdmin();
+
+      allow read: if
+        resource.data.isActive == true ||
+        isSuperAdmin();
+
       allow write: if isSuperAdmin();
     }
 
-    // -------------------------------------------------------------------------
-    // 6. Audit Logs: Only trusted admin/server operations can create audit logs
-    // -------------------------------------------------------------------------
+    // --------------------------------------------------
+    // AUDIT LOGS
+    // --------------------------------------------------
+
     match /auditLogs/{logId} {
+
       allow read: if isSuperAdmin();
+
       allow create: if isSuperAdmin();
+
       allow update, delete: if false;
     }
 
-    // -------------------------------------------------------------------------
-    // Admins Collection: Read and write restricted exclusively to Super Admins
-    // -------------------------------------------------------------------------
+    // --------------------------------------------------
+    // ADMIN DIRECTORY
+    // --------------------------------------------------
+
     match /admins/{adminId} {
+
       allow read, write: if isSuperAdmin();
+    }
+
+    // --------------------------------------------------
+    // TEST / DIAGNOSTICS
+    // --------------------------------------------------
+
+    match /test/{docId} {
+
+      allow read: if isSignedIn();
+
+      allow write: if isSuperAdmin();
     }
   }
 }
