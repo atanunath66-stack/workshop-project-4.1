@@ -185,6 +185,20 @@ export function getFirebaseAuthErrorMessage(error: any): AuthErrorInfo {
         message: 'Sign-in request was cancelled. Please try again.',
       };
 
+    case 'auth/popup-blocked':
+      return {
+        code,
+        message: 'The sign-in popup was blocked by your browser. Please allow popups or use redirect sign-in.',
+        actionRequired: 'Allow popups for this site in your browser settings, or use the redirect authentication option.',
+      };
+
+    case 'auth/unauthorized-domain':
+      return {
+        code,
+        message: 'This domain is not authorized for Google Sign-In in Firebase Console.',
+        actionRequired: 'Add the current app domain to Authorized Domains under Firebase Console -> Authentication -> Settings -> Authorized domains.',
+      };
+
     default:
       // Check if message contains known keywords
       if (rawMessage.toLowerCase().includes('recaptcha')) {

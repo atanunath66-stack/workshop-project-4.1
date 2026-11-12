@@ -4,12 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host 0.0.0.0 --port 3000",
     "build": "vite build",
-    "preview": "vite preview",
+    "preview": "vite preview --host 0.0.0.0 --port 3000",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "test": "npx tsx src/utils/cancellationAndPricing.test.ts && npx tsx src/utils/approvalAndAuth.test.ts && npx tsx src/utils/registrationAuth.test.ts && npx tsx src/utils/securityAudit.test.ts"
+    "test": "npx tsx src/utils/cancellationAndPricing.test.ts && npx tsx src/utils/approvalAndAuth.test.ts && npx tsx src/utils/registrationAuth.test.ts && npx tsx src/utils/securityAudit.test.ts && npx tsx src/utils/googleAuth.test.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

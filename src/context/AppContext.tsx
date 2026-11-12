@@ -41,6 +41,8 @@ import {
   db,
   googleProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut as firebaseSignOut,
   RecaptchaVerifier,
   signInWithPhoneNumber,
@@ -62,6 +64,12 @@ import {
   OperationType,
 } from '../lib/firebase';
 
+export const isMobileDevice = (customUA?: string): boolean => {
+  const ua = customUA ?? (typeof navigator !== 'undefined' ? navigator.userAgent : '');
+  if (!ua) return false;
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+};
+
 export const SUPER_ADMIN_EMAILS = [
   'atanunath66@gmail.com',
   'atanunath44@gmail.com',
@@ -72,6 +80,59 @@ export const isAuthorizedAdminEmail = (email?: string | null): boolean => {
   if (!email) return false;
   return SUPER_ADMIN_EMAILS.includes(email.trim().toLowerCase());
 };
+
+export const isSuperAdminAuth = (email?: string | null, emailVerified?: boolean): boolean => {
+  if (!email) return false;
+  return isAuthorizedAdminEmail(email) && (emailVerified ?? true);
+};
+
+/**
+ * Strict allowlist matching firestore.rules isAllowedRestaurantCreate definition.
+ * Any key not in this list will trigger a PERMISSION_DENIED on create.
+ */
+export const RESTAURANT_CREATE_ALLOWED_KEYS = [
+  'id',
+  'name',
+  'tagline',
+  'description',
+  'ownerId',
+  'ownerName',
+  'phone',
+  'ownerPhone',
+  'email',
+  'address',
+  'area',
+  'city',
+  'lat',
+  'lng',
+  'location',
+  'coverImage',
+  'galleryImages',
+  'categories',
+  'openingTime',
+  'closingTime',
+  'priceForTwo',
+  'status',
+  'facilities',
+  'cancellationPolicy',
+  'menu',
+  'totalTables',
+  'availableTables',
+  'discountOffer',
+  'createdAt',
+  'updatedAt',
+] as const;
+
+export function filterRestaurantCreatePayload(data: Record<string, any>): Record<string, any> {
+  const allowedSet = new Set<string>(RESTAURANT_CREATE_ALLOWED_KEYS);
+  const filtered: Record<string, any> = {};
+  for (const key of Object.keys(data)) {
+    if (allowedSet.has(key) && data[key] !== undefined) {
+      filtered[key] = data[key];
+    }
+  }
+  return filtered;
+}
 
 const STORAGE_KEYS = {
   CURRENT_USER: 'alookhaoge_current_user_v3',
@@ -111,7 +172,7 @@ interface AppContextType {
   openGoogleSignIn: (role?: UserRole) => void;
 
   // Real Firebase Authentication Methods
-  signInWithGoogle: (intendedRole?: UserRole) => Promise<{ success: boolean; error?: string }>;
+  signInWithGoogle: (intendedRole?: UserRole, forceRedirect?: boolean) => Promise<{ success: boolean; error?: string; warning?: string }>;
   sendPhoneOtp: (
     phoneNumber: string,
     recaptchaContainerId: string
@@ -338,84 +399,155 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, []);
 
-  // Firebase Auth State Listener
+  // Mutex cache to prevent duplicate profile creation and race conditions (Requirement 11)
+  const userSyncInFlightRef = useRef<Map<string, Promise<{ user: User; warning?: string }>>>(new Map());
+  const redirectProcessedRef = useRef(false);
+
+  const syncFirebaseUserProfile = async (
+    user: FirebaseUser,
+    intendedRole: UserRole = 'customer'
+  ): Promise<{ user: User; warning?: string }> => {
+    const inFlight = userSyncInFlightRef.current.get(user.uid);
+    if (inFlight) {
+      return inFlight;
+    }
+
+    const task = (async (): Promise<{ user: User; warning?: string }> => {
+      // Super Admin check using verified allowlist without querying /admins (Requirement 8)
+      const isSuper = isSuperAdminAuth(user.email, user.emailVerified ?? undefined);
+
+      if (isSuper) {
+        setIsAdminAuthenticated(true);
+        localStorage.setItem(STORAGE_KEYS.ADMIN_AUTH, 'true');
+      }
+
+      // Read existing user doc if it exists using authenticated UID (Requirement 5)
+      let existingProfile: User | null = null;
+      try {
+        const userDocSnap = await getDoc(doc(db, 'users', user.uid));
+        if (userDocSnap.exists()) {
+          existingProfile = userDocSnap.data() as User;
+        }
+      } catch (readErr: any) {
+        console.warn('Firestore user profile read notice:', readErr?.message || readErr);
+      }
+
+      // Enforce Role Security:
+      // Normal Google sign-ins MUST default to 'customer' (Requirement 6)
+      // Customers CANNOT self-assign 'owner' or 'admin' (Requirement 7)
+      // Only established owners (stored in Firestore from prior registration) or verified superadmins can have elevated roles
+      let finalRole: UserRole = 'customer';
+      if (isSuper) {
+        finalRole = 'admin';
+      } else if (existingProfile?.role === 'owner') {
+        finalRole = 'owner';
+      } else {
+        finalRole = 'customer';
+      }
+
+      let profile: User;
+      if (existingProfile) {
+        profile = {
+          ...existingProfile,
+          id: user.uid,
+          name: user.displayName || existingProfile.name || (user.email ? user.email.split('@')[0] : 'Verified Diner'),
+          email: user.email || existingProfile.email || '',
+          phone: user.phoneNumber || existingProfile.phone || '',
+          avatar: user.photoURL || existingProfile.avatar,
+          role: finalRole,
+          authProvider: user.phoneNumber ? 'phone' : 'google',
+        };
+      } else {
+        // First-time customer creation (Requirements 5 & 6)
+        profile = {
+          id: user.uid,
+          name: user.displayName || (user.email ? user.email.split('@')[0] : 'Verified Diner'),
+          email: user.email || '',
+          phone: user.phoneNumber || '',
+          avatar: user.photoURL || undefined,
+          role: finalRole,
+          authProvider: user.phoneNumber ? 'phone' : 'google',
+          createdAt: new Date().toISOString(),
+        };
+      }
+
+      // Update state and local storage immediately so UI reflects authentication
+      setCurrentUser(profile);
+      setIsLoggedIn(true);
+      localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(profile));
+
+      // Close login modals only after successful profile retrieval & creation (Requirement 10)
+      setIsAuthModalOpen(false);
+      setIsGoogleSignInModalOpen(false);
+
+      // Persist profile to Firestore with prominent warning if write fails (Requirement 9)
+      let saveWarning: string | undefined;
+      try {
+        await setDoc(doc(db, 'users', user.uid), profile, { merge: true });
+        logOtpEvent('Firestore user profile saved successfully', { uid: user.uid, role: finalRole });
+      } catch (writeErr: any) {
+        console.warn('Firestore user profile write failed:', writeErr);
+        saveWarning = `Signed in as ${profile.name}, but saving your cloud profile encountered an issue: ${writeErr?.message || 'Permission denied'}. Offline session active.`;
+        sendNotification(
+          user.uid,
+          profile.role,
+          'Cloud Profile Sync Notice ⚠️',
+          saveWarning,
+          'info'
+        );
+      }
+
+      // Execute queued action if any
+      if (pendingActionRef.current) {
+        const act = pendingActionRef.current;
+        pendingActionRef.current = null;
+        setTimeout(() => act(), 100);
+      }
+
+      return { user: profile, warning: saveWarning };
+    })();
+
+    userSyncInFlightRef.current.set(user.uid, task);
+    try {
+      return await task;
+    } finally {
+      setTimeout(() => {
+        userSyncInFlightRef.current.delete(user.uid);
+      }, 3000);
+    }
+  };
+
+  // Process Google redirect result exactly once when application initializes (Requirement 4)
+  useEffect(() => {
+    if (redirectProcessedRef.current) return;
+    redirectProcessedRef.current = true;
+
+    getRedirectResult(auth)
+      .then(async (credential) => {
+        if (credential?.user) {
+          logOtpEvent('Google redirect credential resolved on app boot', {
+            uid: credential.user.uid,
+            email: credential.user.email,
+          });
+          const storedRole = (sessionStorage.getItem('zaikya_auth_intended_role') as UserRole) || 'customer';
+          sessionStorage.removeItem('zaikya_auth_intended_role');
+          await syncFirebaseUserProfile(credential.user, storedRole);
+        }
+      })
+      .catch((err: any) => {
+        const errInfo = getFirebaseAuthErrorMessage(err);
+        console.warn('Google getRedirectResult error:', errInfo.message);
+        logOtpEvent('Redirect result error', { code: errInfo.code, message: errInfo.message });
+      });
+  }, []);
+
+  // Firebase Auth State Listener (Requirement 11: no duplicate listener re-subscriptions)
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setFirebaseUser(user);
       if (user) {
         setIsLoggedIn(true);
-
-        const isSuper = isAuthorizedAdminEmail(user.email);
-        let hasAdminDoc = false;
-        try {
-          const adminDocSnap = await getDoc(doc(db, 'admins', user.uid));
-          hasAdminDoc = adminDocSnap.exists();
-        } catch {}
-
-        const isAdmin = isSuper || hasAdminDoc;
-        if (isAdmin) {
-          setIsAdminAuthenticated(true);
-          localStorage.setItem(STORAGE_KEYS.ADMIN_AUTH, 'true');
-          // Self-heal / guarantee /admins/{uid} document exists in Firestore
-          if (!hasAdminDoc) {
-            setDoc(doc(db, 'admins', user.uid), {
-              email: user.email,
-              role: 'admin',
-              uid: user.uid,
-              createdAt: new Date().toISOString(),
-            }).catch(() => {});
-          }
-        }
-
-        // Retrieve or initialize user profile using single document read (doc by user.uid)
-        try {
-          const userDocSnap = await getDoc(doc(db, 'users', user.uid));
-          if (userDocSnap.exists()) {
-            const data = userDocSnap.data() as User;
-            const updatedProfile: User = {
-              ...data,
-              id: user.uid,
-              role: isAdmin ? 'admin' : (data.role || authModalRole || 'customer'),
-            };
-            setCurrentUser(updatedProfile);
-            localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(updatedProfile));
-          } else {
-            const newProfile: User = {
-              id: user.uid,
-              name: user.displayName || user.email?.split('@')[0] || (user.phoneNumber ? `User ${user.phoneNumber.slice(-4)}` : 'Verified Diner'),
-              email: user.email || '',
-              phone: user.phoneNumber || '',
-              role: isAdmin ? 'admin' : (authModalRole || 'customer'),
-              authProvider: user.phoneNumber ? 'phone' : 'google',
-              createdAt: new Date().toISOString(),
-            };
-            setCurrentUser(newProfile);
-            localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(newProfile));
-            setDoc(doc(db, 'users', user.uid), newProfile).catch((e) => {
-              console.warn('Failed saving user doc:', e);
-            });
-          }
-        } catch (err) {
-          console.warn('User profile retrieval error:', err);
-          const fallbackProfile: User = {
-            id: user.uid,
-            name: user.displayName || user.email?.split('@')[0] || 'Verified User',
-            email: user.email || '',
-            phone: user.phoneNumber || '',
-            role: isAdmin ? 'admin' : (authModalRole || 'customer'),
-            authProvider: user.phoneNumber ? 'phone' : 'google',
-            createdAt: new Date().toISOString(),
-          };
-          setCurrentUser(fallbackProfile);
-          localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(fallbackProfile));
-        }
-
-        // Execute any queued action (e.g. continue booking)
-        if (pendingActionRef.current) {
-          const action = pendingActionRef.current;
-          pendingActionRef.current = null;
-          setTimeout(() => action(), 100);
-        }
+        await syncFirebaseUserProfile(user, 'customer');
       } else {
         // Only reset to guest if not superadmin authenticated
         if (!isAdminAuthenticated) {
@@ -434,7 +566,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     return () => unsubscribe();
-  }, [authModalRole, isAdminAuthenticated]);
+  }, [isAdminAuthenticated]);
 
   // Firestore Real-Time Listener for Restaurants
   useEffect(() => {
@@ -452,7 +584,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           (snapshot) => {
             const firestoreRests: Restaurant[] = [];
             snapshot.forEach((d) => {
-              firestoreRests.push({ ...(d.data() as Restaurant), id: d.id });
+              const data = d.data() as any;
+              firestoreRests.push({
+                ...data,
+                id: d.id,
+                averageRating: data.averageRating ?? 0,
+                totalReviews: data.totalReviews ?? 0,
+              } as Restaurant);
             });
             setRestaurants(firestoreRests);
             logRestaurantEvent('Real-time restaurants snapshot received (Super Admin)', {
@@ -487,7 +625,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           (snapshot) => {
             activeRests = [];
             snapshot.forEach((d) => {
-              activeRests.push({ ...(d.data() as Restaurant), id: d.id });
+              const data = d.data() as any;
+              activeRests.push({
+                ...data,
+                id: d.id,
+                averageRating: data.averageRating ?? 0,
+                totalReviews: data.totalReviews ?? 0,
+              } as Restaurant);
             });
             updateCombined();
           },
@@ -502,7 +646,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           (snapshot) => {
             ownerRests = [];
             snapshot.forEach((d) => {
-              ownerRests.push({ ...(d.data() as Restaurant), id: d.id });
+              const data = d.data() as any;
+              ownerRests.push({
+                ...data,
+                id: d.id,
+                averageRating: data.averageRating ?? 0,
+                totalReviews: data.totalReviews ?? 0,
+              } as Restaurant);
             });
             updateCombined();
             logRestaurantEvent('Real-time owner restaurants snapshot received', {
@@ -521,7 +671,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           (snapshot) => {
             const list: Restaurant[] = [];
             snapshot.forEach((d) => {
-              list.push({ ...(d.data() as Restaurant), id: d.id });
+              const data = d.data() as any;
+              list.push({
+                ...data,
+                id: d.id,
+                averageRating: data.averageRating ?? 0,
+                totalReviews: data.totalReviews ?? 0,
+              } as Restaurant);
             });
             setRestaurants(list);
           },
@@ -657,69 +813,71 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Real Firebase Google Sign-In
-  const signInWithGoogle = async (intendedRole: UserRole = 'customer'): Promise<{ success: boolean; error?: string }> => {
+  // Real Firebase Google Sign-In with popup/redirect support for desktop & mobile
+  const signInWithGoogle = async (
+    intendedRole: UserRole = 'customer',
+    forceRedirect: boolean = false
+  ): Promise<{ success: boolean; error?: string; warning?: string }> => {
+    logOtpEvent('Google sign-in initiated', { intendedRole, isMobile: isMobileDevice(), forceRedirect });
+
+    // Store intended role in sessionStorage in case redirect occurs (Requirement 4)
+    try {
+      sessionStorage.setItem('zaikya_auth_intended_role', intendedRole);
+    } catch {}
+
+    // 1. Mobile browsers or forced redirect: Use signInWithRedirect (Requirements 1 & 2)
+    if (forceRedirect || isMobileDevice()) {
+      try {
+        await signInWithRedirect(auth, googleProvider);
+        return { success: true };
+      } catch (redirErr: any) {
+        console.error('Google signInWithRedirect error:', redirErr);
+        const errInfo = getFirebaseAuthErrorMessage(redirErr);
+        return { success: false, error: errInfo.message };
+      }
+    }
+
+    // 2. Desktop browsers: Use signInWithPopup with graceful fallback (Requirements 1 & 3)
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-      const isSuper = isAuthorizedAdminEmail(user.email);
-      let hasAdminDoc = false;
-      try {
-        const adminDocSnap = await getDoc(doc(db, 'admins', user.uid));
-        hasAdminDoc = adminDocSnap.exists();
-      } catch {}
+      const syncResult = await syncFirebaseUserProfile(result.user, intendedRole);
+      return { success: true, warning: syncResult.warning };
+    } catch (popupErr: any) {
+      logOtpEvent('Google popup error', { code: popupErr?.code, message: popupErr?.message });
 
-      const isAdmin = isSuper || hasAdminDoc;
-      const role: UserRole = isAdmin ? 'admin' : intendedRole;
-
-      if (isAdmin) {
-        setIsAdminAuthenticated(true);
-        localStorage.setItem(STORAGE_KEYS.ADMIN_AUTH, 'true');
-        if (!hasAdminDoc) {
-          setDoc(doc(db, 'admins', user.uid), {
-            email: user.email,
-            role: 'admin',
-            uid: user.uid,
-            createdAt: new Date().toISOString(),
-          }).catch(() => {});
+      // Handle popup-blocked: seamlessly attempt fallback to signInWithRedirect (Requirements 2 & 3)
+      if (popupErr?.code === 'auth/popup-blocked') {
+        try {
+          console.warn('Popup blocked by browser. Automatically falling back to signInWithRedirect...');
+          await signInWithRedirect(auth, googleProvider);
+          return { success: true };
+        } catch (fallbackErr: any) {
+          const fallbackInfo = getFirebaseAuthErrorMessage(fallbackErr);
+          return { success: false, error: fallbackInfo.message };
         }
       }
 
-      const profile: User = {
-        id: user.uid,
-        name: user.displayName || user.email?.split('@')[0] || 'Google User',
-        email: user.email || '',
-        phone: user.phoneNumber || '',
-        avatar: user.photoURL || undefined,
-        role,
-        authProvider: 'google',
-        createdAt: new Date().toISOString(),
+      // Handle popup closed by user gracefully without throwing unhandled rejection (Requirement 3)
+      if (popupErr?.code === 'auth/popup-closed-by-user' || popupErr?.code === 'auth/cancelled-popup-request') {
+        return {
+          success: false,
+          error: 'Sign-in window was closed before completing Google authentication.',
+        };
+      }
+
+      // Handle unauthorized domain gracefully
+      if (popupErr?.code === 'auth/unauthorized-domain') {
+        return {
+          success: false,
+          error: 'This domain is not authorized in Firebase Console. Please add this domain under Authentication -> Settings -> Authorized domains.',
+        };
+      }
+
+      const errInfo = getFirebaseAuthErrorMessage(popupErr);
+      return {
+        success: false,
+        error: errInfo.message || 'Google Sign-In could not be completed. Please try again.',
       };
-
-      setCurrentUser(profile);
-      setIsLoggedIn(true);
-      localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(profile));
-
-      // Save in Firestore
-      try {
-        await setDoc(doc(db, 'users', user.uid), profile, { merge: true });
-      } catch (err) {
-        console.warn('Firestore user save:', err);
-      }
-
-      setIsAuthModalOpen(false);
-      setIsGoogleSignInModalOpen(false);
-
-      if (pendingActionRef.current) {
-        const act = pendingActionRef.current;
-        pendingActionRef.current = null;
-        setTimeout(() => act(), 150);
-      }
-
-      return { success: true };
-    } catch (err: any) {
-      console.error('Google Sign In error:', err);
-      return { success: false, error: err?.message || 'Google Sign-In was cancelled or blocked by browser.' };
     }
   };
 
@@ -986,6 +1144,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       throw authError;
     }
 
+    // Role validation: Do not allow normal customers to create restaurants directly.
+    // Must be authenticated as a store owner or platform admin.
+    if (currentUser.role !== 'owner' && currentUser.role !== 'admin') {
+      const roleError = new Error('Permission denied: Normal customer accounts cannot register restaurants directly. Please sign in or switch to a verified Store Owner account.');
+      logRestaurantEvent('Registration aborted: Normal customer role blocked', {
+        role: currentUser.role,
+        uid: realOwnerUid,
+        name: newRestData.name,
+      });
+      throw roleError;
+    }
+
     logRestaurantEvent('Registration submitted', {
       name: newRestData.name,
       ownerUid: realOwnerUid,
@@ -1011,6 +1181,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updatedAt: nowTimestamp,
     };
 
+    // Client-side representation preserving in-memory fields (averageRating, totalReviews, upiId) for UI
     const newRest: Restaurant = {
       ...newRestData,
       id: restId,
@@ -1023,13 +1194,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updatedAt: nowTimestamp,
     };
 
+    // Filter payload to strictly allowlisted fields per firestore.rules isAllowedRestaurantCreate.
+    // Explicitly strips averageRating, totalReviews, upiId, and unpermitted admin fields.
+    const firestorePayload = filterRestaurantCreatePayload({
+      ...newRest,
+      ownerId: realOwnerUid,
+      status: 'PENDING_APPROVAL',
+      location: locationObj,
+      updatedAt: nowTimestamp,
+      createdAt: nowTimestamp,
+    });
+
     // Save directly to Firestore collection 'restaurants'
     try {
-      await setDoc(doc(db, 'restaurants', restId), newRest);
+      await setDoc(doc(db, 'restaurants', restId), firestorePayload);
       logRestaurantEvent('Firestore write success', {
         restId,
         ownerId: realOwnerUid,
         status: 'PENDING_APPROVAL',
+        keys: Object.keys(firestorePayload),
       });
     } catch (err: any) {
       logRestaurantEvent('Firestore write failure', {

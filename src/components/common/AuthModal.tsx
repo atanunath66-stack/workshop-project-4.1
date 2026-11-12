@@ -48,13 +48,13 @@ export const AuthModal: React.FC<Props> = ({ isOpen, onClose, defaultRole = 'cus
 
   if (!isOpen) return null;
 
-  const handleGoogleClick = async () => {
+  const handleGoogleClick = async (forceRedirect: boolean = false) => {
     setError(null);
     setErrorCode(null);
     setActionRequired(null);
     setIsGoogleLoading(true);
     try {
-      const res = await signInWithGoogle(role);
+      const res = await signInWithGoogle(role, forceRedirect);
       if (!res.success && res.error) {
         setError(res.error);
       } else {
@@ -270,7 +270,7 @@ export const AuthModal: React.FC<Props> = ({ isOpen, onClose, defaultRole = 'cus
 
               <button
                 type="button"
-                onClick={handleGoogleClick}
+                onClick={() => handleGoogleClick(false)}
                 disabled={isGoogleLoading}
                 className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white border border-[#E8E8EC] hover:bg-[#FCE8EF]/40 hover:border-[#E8A0B5] rounded-2xl text-sm font-semibold text-[#34343A] shadow-xs transition-all cursor-pointer disabled:opacity-50"
               >
@@ -294,6 +294,18 @@ export const AuthModal: React.FC<Props> = ({ isOpen, onClose, defaultRole = 'cus
                 </svg>
                 <span>{isGoogleLoading ? 'Connecting to Google...' : `Continue with Google as ${role === 'owner' ? 'Store Owner' : 'Customer'}`}</span>
               </button>
+
+              <div className="flex items-center justify-between text-[11px] text-[#777781] px-1 pt-1">
+                <span>Popup blocked or on mobile?</span>
+                <button
+                  type="button"
+                  onClick={() => handleGoogleClick(true)}
+                  disabled={isGoogleLoading}
+                  className="text-[#C96884] font-semibold hover:underline cursor-pointer disabled:opacity-50"
+                >
+                  Use Redirect Sign-In
+                </button>
+              </div>
             </div>
           )}
 
