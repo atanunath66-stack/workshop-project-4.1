@@ -162,7 +162,7 @@ export const OwnerLocationPickerModal: React.FC<Props> = ({
               type="button"
               onClick={handleUseCurrentLocation}
               disabled={isDetecting}
-              className="px-4 py-2 bg-[#34343A] hover:bg-[#202024] text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs disabled:opacity-50"
+              className="px-4 py-2 bg-[#A8B88A] hover:bg-[#97A779] text-[#25152F] rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs disabled:opacity-50"
             >
               <Compass className={`w-3.5 h-3.5 ${isDetecting ? 'animate-spin' : ''}`} />
               <span>{isDetecting ? 'Detecting GPS...' : 'USE MY CURRENT LOCATION'}</span>
@@ -172,13 +172,13 @@ export const OwnerLocationPickerModal: React.FC<Props> = ({
           {/* Search Locality or Landmark */}
           <div className="space-y-2">
             <div className="relative">
-              <Search className="w-4 h-4 text-[#777781] absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-[#5A4B63] absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search Tumkur area, street, or landmark (e.g. Kyatsandra Thatte Idli belt, SIT Campus, Mandipet)..."
-                className="w-full pl-10 pr-4 py-2.5 bg-[#F7F7F8] border border-[#E8E8EC] focus:border-[#E8A0B5] rounded-xl text-xs text-[#34343A] placeholder:text-[#777781] focus:outline-none transition-colors"
+                className="w-full pl-10 pr-4 py-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl text-xs text-[#25152F] font-bold placeholder:text-[#5A4B63] focus:outline-none transition-colors"
               />
             </div>
 

@@ -4,12 +4,13 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host 0.0.0.0 --port 3000",
+    "dev": "tsx server.ts",
+    "start": "node server.ts",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0 --port 3000",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "test": "npx tsx src/utils/cancellationAndPricing.test.ts && npx tsx src/utils/approvalAndAuth.test.ts && npx tsx src/utils/registrationAuth.test.ts && npx tsx src/utils/securityAudit.test.ts && npx tsx src/utils/googleAuth.test.ts"
+    "test": "npx tsx src/utils/cancellationAndPricing.test.ts && npx tsx src/utils/approvalAndAuth.test.ts && npx tsx src/utils/registrationAuth.test.ts && npx tsx src/utils/securityAudit.test.ts && npx tsx src/utils/googleAuth.test.ts && npx tsx src/utils/paymentVerification.test.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
@@ -17,6 +18,7 @@
     "@tailwindcss/vite": "^4.3.3",
     "@types/canvas-confetti": "^1.9.0",
     "@types/leaflet": "^1.9.22",
+    "@types/qrcode": "^1.5.6",
     "@vis.gl/react-google-maps": "^1.10.2",
     "@vitejs/plugin-react": "^6.1.1",
     "canvas-confetti": "^1.9.4",
@@ -26,6 +28,8 @@
     "leaflet": "^1.9.4",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
+    "qrcode": "^1.5.4",
+    "razorpay": "^2.9.8",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "vite": "^8.3.0"

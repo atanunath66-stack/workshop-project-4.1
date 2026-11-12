@@ -11,6 +11,7 @@ import {
   LogOut,
   Save,
   CheckCircle2,
+  Check,
   Lock,
   Sparkles,
   MapPin,
@@ -229,31 +230,31 @@ export const CustomerProfileView: React.FC<Props> = ({ onGoToBookings, onDiscove
         <form onSubmit={handleSaveProfile} className="space-y-4 text-xs">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block font-semibold text-stone-700 mb-1">Full Name</label>
+              <label className="block font-bold text-[#25152F] mb-1">Full Name</label>
               <input
                 type="text"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-stone-50 border border-[#E8E8EC] rounded-xl focus:outline-none focus:border-[#E8A0B5] font-medium"
+                className="w-full px-3.5 py-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl text-xs text-[#25152F] font-bold placeholder:text-[#5A4B63] focus:outline-none"
                 placeholder="Your full name"
               />
             </div>
 
             <div>
-              <label className="block font-semibold text-stone-700 mb-1">Mobile Contact Phone</label>
+              <label className="block font-bold text-[#25152F] mb-1">Mobile Contact Phone</label>
               <input
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-stone-50 border border-[#E8E8EC] rounded-xl focus:outline-none focus:border-[#E8A0B5] font-mono"
+                className="w-full px-3.5 py-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl text-xs text-[#25152F] font-mono font-bold placeholder:text-[#5A4B63] focus:outline-none"
                 placeholder="+91 98765 43210"
               />
             </div>
           </div>
 
           <div>
-            <label className="block font-semibold text-stone-700 mb-1">
+            <label className="block font-bold text-[#25152F] mb-1">
               Default Area / Address (for Nearby Pre-Orders)
             </label>
             <div className="relative">
@@ -261,15 +262,15 @@ export const CustomerProfileView: React.FC<Props> = ({ onGoToBookings, onDiscove
                 type="text"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                className="w-full pl-9 pr-3.5 py-2.5 bg-stone-50 border border-[#E8E8EC] rounded-xl focus:outline-none focus:border-[#E8A0B5]"
+                className="w-full pl-9 pr-3.5 py-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl text-xs text-[#25152F] font-bold placeholder:text-[#5A4B63] focus:outline-none"
                 placeholder="e.g. 4th Block Koramangala, Bengaluru"
               />
-              <MapPin className="w-4 h-4 text-stone-400 absolute left-3 top-3" />
+              <MapPin className="w-4 h-4 text-[#5A4B63] absolute left-3 top-3" />
             </div>
           </div>
 
           <div>
-            <label className="block font-semibold text-stone-700 mb-2">Dietary Preference</label>
+            <label className="block font-bold text-[#25152F] mb-2">Dietary Preference</label>
             <div className="flex flex-wrap gap-2">
               {[
                 { id: 'all', label: 'All Cuisines (Veg & Non-Veg)' },
@@ -281,10 +282,10 @@ export const CustomerProfileView: React.FC<Props> = ({ onGoToBookings, onDiscove
                   key={opt.id}
                   type="button"
                   onClick={() => setDietaryPref(opt.id as any)}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                  className={`px-3.5 py-2 rounded-xl text-xs border transition-all cursor-pointer ${
                     dietaryPref === opt.id
-                      ? 'bg-[#34343A] text-white border-[#34343A] shadow-xs'
-                      : 'bg-stone-50 text-stone-700 border-[#E8E8EC] hover:bg-[#FCE8EF]/40'
+                      ? 'bg-[#25152F] text-white border-[#25152F] shadow-xs font-bold'
+                      : 'bg-[#F7F2EA] text-[#25152F] border-[#DDD4E2] hover:bg-[#EDE6DA] font-semibold'
                   }`}
                 >
                   {opt.label}
@@ -296,9 +297,9 @@ export const CustomerProfileView: React.FC<Props> = ({ onGoToBookings, onDiscove
           <div className="flex justify-end pt-2">
             <button
               type="submit"
-              className="px-5 py-2.5 bg-[#34343A] hover:bg-[#232328] text-white rounded-xl font-bold transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
+              className="px-5 py-2.5 bg-[#A8B88A] hover:bg-[#97A779] text-[#25152F] rounded-xl font-bold transition-all flex items-center gap-1.5 shadow-sm cursor-pointer border border-[#8C9C6F]"
             >
-              <Save className="w-3.5 h-3.5 text-[#E8A0B5]" />
+              <Check className="w-4 h-4 text-[#25152F]" />
               <span>Save Profile Changes</span>
             </button>
           </div>

@@ -192,6 +192,13 @@ export function getFirebaseAuthErrorMessage(error: any): AuthErrorInfo {
         actionRequired: 'Allow popups for this site in your browser settings, or use the redirect authentication option.',
       };
 
+    case 'auth/popup-timeout':
+      return {
+        code,
+        message: 'Google Sign-In popup timed out or cross-origin communication was blocked by Safari privacy settings. Switching to redirect sign-in...',
+        actionRequired: 'Safari on Mac blocks cross-origin popup messaging. Use redirect sign-in for seamless authentication.',
+      };
+
     case 'auth/unauthorized-domain':
       return {
         code,

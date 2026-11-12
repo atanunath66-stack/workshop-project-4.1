@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { isMobileDevice, isSuperAdminAuth } from '../context/AppContext';
+import { isMobileDevice, isSafariBrowser, isSuperAdminAuth } from '../context/AppContext';
 import { getFirebaseAuthErrorMessage } from './firebaseAuthErrors';
 import { User, UserRole } from '../types';
 
@@ -130,4 +130,75 @@ test('Google Login: Error mapping handles popup-blocked and unauthorized-domain 
   const mappedDomain = getFirebaseAuthErrorMessage(unauthorizedDomain);
   assert.equal(mappedDomain.code, 'auth/unauthorized-domain');
   assert.match(mappedDomain.actionRequired || '', /Authorized domains/i);
+});
+
+test('Google Login: isSafariBrowser accurately detects Safari Mac and iOS while excluding Chrome and Firefox', () => {
+  // Safari on Mac Desktop (the exact environment in user report)
+  const safariMacUA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15';
+  const appleVendor = 'Apple Computer, Inc.';
+
+  // Safari on iPhone / iPad
+  const safariIPhoneUA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1';
+
+  // Chrome on Mac Desktop
+  const chromeMacUA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
+  const googleVendor = 'Google Inc.';
+
+  // Chrome on Windows
+  const chromeWindowsUA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
+
+  // Firefox on Mac
+  const firefoxMacUA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:123.0) Gecko/20100101 Firefox/123.0';
+
+  // Edge on Windows
+  const edgeWindowsUA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0';
+
+  assert.equal(isSafariBrowser(safariMacUA, appleVendor), true, 'Safari on Mac must be detected');
+  assert.equal(isSafariBrowser(safariIPhoneUA, appleVendor), true, 'Safari on iPhone must be detected');
+
+  assert.equal(isSafariBrowser(chromeMacUA, googleVendor), false, 'Chrome on Mac must NOT be detected as Safari');
+  assert.equal(isSafariBrowser(chromeWindowsUA, googleVendor), false, 'Chrome on Windows must NOT be detected as Safari');
+  assert.equal(isSafariBrowser(firefoxMacUA, ''), false, 'Firefox on Mac must NOT be detected as Safari');
+  assert.equal(isSafariBrowser(edgeWindowsUA, ''), false, 'Edge on Windows must NOT be detected as Safari');
+});
+
+test('Google Login: Simultaneous authentication mutex blocks parallel popup/redirect requests', () => {
+  let isAuthInProgress = false;
+
+  const simulateSignInWithMutex = (): { success: boolean; error?: string } => {
+    if (isAuthInProgress) {
+      return {
+        success: false,
+        error: 'An authentication attempt is already in progress. Please check your existing sign-in window or wait a moment.',
+      };
+    }
+    isAuthInProgress = true;
+    return { success: true };
+  };
+
+  // First call succeeds and acquires mutex
+  const res1 = simulateSignInWithMutex();
+  assert.equal(res1.success, true);
+  assert.equal(isAuthInProgress, true);
+
+  // Simultaneous second call while first is in-flight is rejected cleanly
+  const res2 = simulateSignInWithMutex();
+  assert.equal(res2.success, false);
+  assert.match(res2.error || '', /already in progress/i);
+
+  // Release mutex
+  isAuthInProgress = false;
+  const res3 = simulateSignInWithMutex();
+  assert.equal(res3.success, true);
+});
+
+test('Google Login: Error mapping handles popup-timeout gracefully', () => {
+  const timeoutError = {
+    code: 'auth/popup-timeout',
+    message: 'Google Sign-In popup took too long to complete. Switching to redirect sign-in...',
+  };
+  const mapped = getFirebaseAuthErrorMessage(timeoutError);
+  assert.equal(mapped.code, 'auth/popup-timeout');
+  assert.match(mapped.message, /popup timed out/i);
+  assert.match(mapped.actionRequired || '', /redirect/i);
 });

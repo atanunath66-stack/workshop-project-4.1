@@ -40,56 +40,56 @@ export const HeroSection: React.FC<Props> = ({ onOpenMap, onOpenLocationModal })
 
           {/* Search Bar & Location Input */}
           <div className="pt-2">
-            <div className="bg-white p-2 sm:p-2.5 rounded-3xl shadow-sm border border-[#E8E8EC] flex flex-col sm:flex-row items-center gap-2 max-w-2xl mx-auto">
+            <div className="bg-[#F7F2EA] p-2 sm:p-2.5 rounded-3xl shadow-md border-2 border-[#DDD4E2] flex flex-col sm:flex-row items-center gap-2 max-w-2xl mx-auto">
               <button
                 type="button"
                 onClick={onOpenLocationModal}
-                className="group flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-[#34343A] bg-[#F7F7F8] hover:bg-[#FCE8EF]/40 rounded-2xl w-full sm:w-auto shrink-0 border border-[#E8E8EC] hover:border-[#E8A0B5] transition-all text-left shadow-2xs cursor-pointer"
+                className="group flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-[#25152F] bg-white hover:bg-[#EDE6DA] rounded-2xl w-full sm:w-auto shrink-0 border border-[#DDD4E2] hover:border-[#A8B88A] transition-all text-left shadow-2xs cursor-pointer"
                 title="Change discovery location"
               >
                 <div className="relative flex items-center justify-center shrink-0">
-                  <MapPin className="w-4 h-4 text-[#C96884] transition-transform group-hover:scale-110" />
-                  <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-[#E8A0B5] rounded-full animate-ping" />
+                  <MapPin className="w-4 h-4 text-[#B96D79] transition-transform group-hover:scale-110" />
+                  <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-[#A8B88A] rounded-full animate-ping" />
                 </div>
                 <div className="flex flex-col min-w-0 pr-1 text-left">
-                  <span className="text-[10px] text-[#777781] font-medium leading-none">Your Location</span>
-                  <span className="truncate max-w-[125px] font-bold text-[#34343A] transition-colors">
+                  <span className="text-[10px] text-[#5A4B63] font-medium leading-none">Your Location</span>
+                  <span className="truncate max-w-[125px] font-bold text-[#25152F] transition-colors">
                     {currentLocation.split(',')[0]}
                   </span>
                 </div>
-                <span className="text-[10px] font-semibold text-[#C96884] bg-[#FCE8EF] group-hover:bg-[#F8D3DF] px-2 py-0.5 rounded-lg shrink-0 ml-auto sm:ml-0 transition-colors">
+                <span className="text-[10px] font-bold text-[#25152F] bg-[#A8B88A]/30 group-hover:bg-[#A8B88A]/50 px-2 py-0.5 rounded-lg shrink-0 ml-auto sm:ml-0 transition-colors">
                   Change
                 </span>
               </button>
 
               <div className="relative flex-1 w-full">
-                <Search className="w-4 h-4 text-[#777781] absolute left-3 top-3" />
+                <Search className="w-4 h-4 text-[#5A4B63] absolute left-3 top-3" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="What are you craving today? (e.g. chaat, dosa, roll)"
-                  className="w-full pl-9 pr-3 py-2 text-sm bg-transparent placeholder:text-[#777781] text-[#34343A] focus:outline-none"
+                  className="w-full pl-9 pr-3 py-2 text-sm bg-transparent placeholder:text-[#5A4B63] text-[#25152F] font-bold focus:outline-none"
                 />
               </div>
 
               <button
                 type="button"
                 onClick={onOpenMap}
-                className="w-full sm:w-auto px-5 py-2.5 bg-[#34343A] hover:bg-[#232328] text-white text-xs font-semibold rounded-2xl transition-all whitespace-nowrap shadow-xs cursor-pointer border border-[#E8A0B5]/40"
+                className="w-full sm:w-auto px-5 py-2.5 bg-[#A8B88A] hover:bg-[#97A779] text-[#25152F] text-xs font-bold rounded-2xl transition-all whitespace-nowrap shadow-sm cursor-pointer border border-[#8C9C6F]"
               >
                 Explore on Map
               </button>
             </div>
 
             {/* Quick Suggestions */}
-            <div className="flex flex-wrap items-center justify-center gap-2 pt-3 text-xs text-[#777781]">
-              <span className="font-medium text-[#777781]">Popular cravings:</span>
+            <div className="flex flex-wrap items-center justify-center gap-2 pt-3 text-xs text-stone-300">
+              <span className="font-semibold text-[#E9D8B5]">Popular cravings:</span>
               {QUICK_CRAVINGS.map((craving) => (
                 <button
                   key={craving}
                   onClick={() => setSearchQuery(craving)}
-                  className="px-3 py-1 bg-white hover:bg-[#FCE8EF] hover:text-[#C96884] hover:border-[#E8A0B5] border border-[#E8E8EC] rounded-xl text-[#34343A] transition-colors cursor-pointer text-xs"
+                  className="px-3 py-1 bg-[#F7F2EA] hover:bg-[#EDE6DA] border border-[#DDD4E2] rounded-xl text-[#25152F] font-bold transition-colors cursor-pointer text-xs shadow-2xs"
                 >
                   {craving}
                 </button>

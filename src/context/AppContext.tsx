@@ -70,6 +70,19 @@ export const isMobileDevice = (customUA?: string): boolean => {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
 };
 
+export const isSafariBrowser = (customUA?: string, customVendor?: string): boolean => {
+  const ua = customUA ?? (typeof navigator !== 'undefined' ? navigator.userAgent : '');
+  const vendor = customVendor ?? (typeof navigator !== 'undefined' ? navigator.vendor : '');
+  if (!ua) return false;
+
+  // Exclude Chrome, Chromium, Edge, Firefox, Android browsers, Opera
+  const isExcludedBrowser = /Chrome|CriOS|Edg|Firefox|FxiOS|OPR|Android/i.test(ua);
+  const isAppleVendor = typeof vendor === 'string' && /Apple/i.test(vendor);
+  const hasSafariString = /Safari/i.test(ua);
+
+  return (isAppleVendor || hasSafariString) && !isExcludedBrowser;
+};
+
 export const SUPER_ADMIN_EMAILS = [
   'atanunath66@gmail.com',
   'atanunath44@gmail.com',
@@ -173,6 +186,9 @@ interface AppContextType {
 
   // Real Firebase Authentication Methods
   signInWithGoogle: (intendedRole?: UserRole, forceRedirect?: boolean) => Promise<{ success: boolean; error?: string; warning?: string }>;
+  isRedirectChecking: boolean;
+  redirectAuthError: string | null;
+  clearRedirectAuthError: () => void;
   sendPhoneOtp: (
     phoneNumber: string,
     recaptchaContainerId: string
@@ -220,7 +236,8 @@ interface AppContextType {
   customerPayAdvance: (
     bookingId: string,
     method?: string,
-    upiApp?: 'gpay' | 'phonepe' | 'custom_upi' | 'card' | 'netbanking'
+    upiApp?: 'gpay' | 'phonepe' | 'custom_upi' | 'card' | 'netbanking',
+    verifiedDetails?: { paymentId?: string; orderId?: string; signature?: string }
   ) => void;
   updateBookingLifecycleStatus: (bookingId: string, status: BookingStatus) => void;
   completeRemainingPayment: (
@@ -331,6 +348,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isGoogleSignInModalOpen, setIsGoogleSignInModalOpen] = useState(false);
   const [googleSignInRole, setGoogleSignInRole] = useState<UserRole>('customer');
   const [isAdminLoginModalOpen, setIsAdminLoginModalOpen] = useState(false);
+
+  // Redirect checking and auth in-progress mutex state (Requirement 4, 5, 6)
+  const [isRedirectChecking, setIsRedirectChecking] = useState<boolean>(true);
+  const [redirectAuthError, setRedirectAuthError] = useState<string | null>(null);
+  const clearRedirectAuthError = () => setRedirectAuthError(null);
+  const authInProgressRef = useRef<boolean>(false);
 
   // Pending action after auth
   const pendingActionRef = useRef<(() => void) | null>(null);
@@ -517,10 +540,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Process Google redirect result exactly once when application initializes (Requirement 4)
+  // Process Google redirect result exactly once when application initializes (Requirement 4 & 5)
   useEffect(() => {
     if (redirectProcessedRef.current) return;
     redirectProcessedRef.current = true;
+    setIsRedirectChecking(true);
 
     getRedirectResult(auth)
       .then(async (credential) => {
@@ -529,7 +553,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             uid: credential.user.uid,
             email: credential.user.email,
           });
-          const storedRole = (sessionStorage.getItem('zaikya_auth_intended_role') as UserRole) || 'customer';
+          const storedRole = (
+            localStorage.getItem('zaikya_auth_intended_role') ||
+            sessionStorage.getItem('zaikya_auth_intended_role') ||
+            'customer'
+          ) as UserRole;
+          localStorage.removeItem('zaikya_auth_intended_role');
           sessionStorage.removeItem('zaikya_auth_intended_role');
           await syncFirebaseUserProfile(credential.user, storedRole);
         }
@@ -538,6 +567,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const errInfo = getFirebaseAuthErrorMessage(err);
         console.warn('Google getRedirectResult error:', errInfo.message);
         logOtpEvent('Redirect result error', { code: errInfo.code, message: errInfo.message });
+        setRedirectAuthError(errInfo.message);
+      })
+      .finally(() => {
+        setIsRedirectChecking(false);
       });
   }, []);
 
@@ -549,17 +582,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setIsLoggedIn(true);
         await syncFirebaseUserProfile(user, 'customer');
       } else {
-        // Only reset to guest if not superadmin authenticated
+        // Requirement 6: Ensure onAuthStateChanged does not overwrite a successful login with guest state
         if (!isAdminAuthenticated) {
           const stored = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
           if (stored) {
             try {
               const parsed = JSON.parse(stored);
-              if (parsed.id === 'guest') {
+              // Only reset to guest if the stored session was already guest
+              if (parsed?.id === 'guest') {
                 setIsLoggedIn(false);
                 setCurrentUser(GUEST_USER);
               }
             } catch {}
+          } else {
+            setIsLoggedIn(false);
+            setCurrentUser(GUEST_USER);
           }
         }
       }
@@ -813,52 +850,124 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Real Firebase Google Sign-In with popup/redirect support for desktop & mobile
+  // Real Firebase Google Sign-In:
+  // - Safari & Mobile: signInWithRedirect is used directly to prevent ITP cross-origin popup hang (Requirements 1, 2, 4)
+  // - Chrome/Firefox/Edge Desktop: signInWithPopup is used with timeout race & automatic redirect fallback (Requirements 2, 3)
+  // - Simultaneous attempts prevented via authInProgressRef mutex (Requirement 6)
   const signInWithGoogle = async (
     intendedRole: UserRole = 'customer',
     forceRedirect: boolean = false
   ): Promise<{ success: boolean; error?: string; warning?: string }> => {
-    logOtpEvent('Google sign-in initiated', { intendedRole, isMobile: isMobileDevice(), forceRedirect });
+    // Prevent simultaneous authentication attempts (Requirement 6)
+    if (authInProgressRef.current) {
+      return {
+        success: false,
+        error: 'An authentication attempt is already in progress. Please check your existing sign-in window or wait a moment.',
+      };
+    }
+    authInProgressRef.current = true;
+    setRedirectAuthError(null);
 
-    // Store intended role in sessionStorage in case redirect occurs (Requirement 4)
+    const isSafari = isSafariBrowser();
+    const isMobile = isMobileDevice();
+
+    logOtpEvent('Google sign-in initiated', {
+      intendedRole,
+      forceRedirect,
+      isSafari,
+      isMobile,
+    });
+
+    // Store intended role in BOTH localStorage and sessionStorage so Safari retains it across page reloads (Requirement 4 & 7)
     try {
+      localStorage.setItem('zaikya_auth_intended_role', intendedRole);
       sessionStorage.setItem('zaikya_auth_intended_role', intendedRole);
-    } catch {}
+    } catch (e) {
+      console.warn('Could not store intended role in storage:', e);
+    }
 
-    // 1. Mobile browsers or forced redirect: Use signInWithRedirect (Requirements 1 & 2)
-    if (forceRedirect || isMobileDevice()) {
+    // Determine if we should use redirect directly:
+    // 1. Caller explicitly requested forceRedirect
+    // 2. Safari on Mac or iOS (Apple ITP blocks cross-origin popup storage and causes popup to hang after selection)
+    // 3. Mobile devices (popups are unreliable or blocked)
+    const shouldUseRedirect = forceRedirect || isSafari || isMobile;
+
+    if (shouldUseRedirect) {
       try {
+        logOtpEvent('Using signInWithRedirect as primary method', {
+          reason: forceRedirect ? 'forceRedirect' : isSafari ? 'safari-detected' : 'mobile-device',
+        });
         await signInWithRedirect(auth, googleProvider);
-        return { success: true };
+        return { success: true, warning: 'Redirecting to Google for secure sign-in...' };
       } catch (redirErr: any) {
+        authInProgressRef.current = false;
         console.error('Google signInWithRedirect error:', redirErr);
         const errInfo = getFirebaseAuthErrorMessage(redirErr);
         return { success: false, error: errInfo.message };
       }
     }
 
-    // 2. Desktop browsers: Use signInWithPopup with graceful fallback (Requirements 1 & 3)
+    // For desktop non-Safari browsers (Chrome, Edge, Firefox), use signInWithPopup with timeout protection (Requirement 2 & 3)
     try {
-      const result = await signInWithPopup(auth, googleProvider);
+      const POPUP_TIMEOUT_MS = 30000; // 30 second timeout protection against stuck popups
+      let timeoutHandle: any;
+
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutHandle = setTimeout(() => {
+          const timeoutErr: any = new Error(
+            'Google Sign-In popup took too long to complete. Safari and strict privacy browsers block cross-origin popup communication. Switching to redirect sign-in...'
+          );
+          timeoutErr.code = 'auth/popup-timeout';
+          reject(timeoutErr);
+        }, POPUP_TIMEOUT_MS);
+        if (typeof timeoutHandle === 'object' && timeoutHandle !== null && 'unref' in timeoutHandle) {
+          (timeoutHandle as any).unref();
+        }
+      });
+
+      const result = await Promise.race([
+        signInWithPopup(auth, googleProvider),
+        timeoutPromise,
+      ]).finally(() => {
+        if (timeoutHandle) clearTimeout(timeoutHandle);
+      });
+
+      // Validate OAuth credential result is actually received
+      if (!result || !result.user) {
+        throw new Error('No user credentials returned from Google authentication.');
+      }
+
       const syncResult = await syncFirebaseUserProfile(result.user, intendedRole);
+      authInProgressRef.current = false;
       return { success: true, warning: syncResult.warning };
     } catch (popupErr: any) {
+      authInProgressRef.current = false;
       logOtpEvent('Google popup error', { code: popupErr?.code, message: popupErr?.message });
 
-      // Handle popup-blocked: seamlessly attempt fallback to signInWithRedirect (Requirements 2 & 3)
-      if (popupErr?.code === 'auth/popup-blocked') {
+      // Fallback: If popup is blocked, timed out, or interrupted by browser restrictions,
+      // fall back to signInWithRedirect immediately (Requirement 3 & 4)
+      const isBlockedOrTimedOut =
+        popupErr?.code === 'auth/popup-blocked' ||
+        popupErr?.code === 'auth/popup-timeout' ||
+        popupErr?.code === 'auth/cancelled-popup-request' ||
+        (typeof popupErr?.message === 'string' &&
+          (popupErr.message.toLowerCase().includes('popup') || popupErr.message.toLowerCase().includes('timeout')));
+
+      if (isBlockedOrTimedOut) {
         try {
-          console.warn('Popup blocked by browser. Automatically falling back to signInWithRedirect...');
+          console.warn('Popup blocked or timed out. Falling back to signInWithRedirect...');
+          authInProgressRef.current = true;
           await signInWithRedirect(auth, googleProvider);
-          return { success: true };
+          return { success: true, warning: 'Redirecting to Google for secure sign-in...' };
         } catch (fallbackErr: any) {
+          authInProgressRef.current = false;
           const fallbackInfo = getFirebaseAuthErrorMessage(fallbackErr);
           return { success: false, error: fallbackInfo.message };
         }
       }
 
-      // Handle popup closed by user gracefully without throwing unhandled rejection (Requirement 3)
-      if (popupErr?.code === 'auth/popup-closed-by-user' || popupErr?.code === 'auth/cancelled-popup-request') {
+      // Handle popup closed by user gracefully without swallowing error
+      if (popupErr?.code === 'auth/popup-closed-by-user') {
         return {
           success: false,
           error: 'Sign-in window was closed before completing Google authentication.',
@@ -867,9 +976,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Handle unauthorized domain gracefully
       if (popupErr?.code === 'auth/unauthorized-domain') {
+        const currentDomain = typeof window !== 'undefined' ? window.location.hostname : 'current domain';
         return {
           success: false,
-          error: 'This domain is not authorized in Firebase Console. Please add this domain under Authentication -> Settings -> Authorized domains.',
+          error: `Domain "${currentDomain}" is not authorized in Firebase Console. Please add "${currentDomain}" under Firebase Console -> Authentication -> Settings -> Authorized domains.`,
         };
       }
 
@@ -1545,7 +1655,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const customerPayAdvance = (
     bookingId: string,
     method = 'UPI',
-    upiApp: 'gpay' | 'phonepe' | 'custom_upi' | 'card' | 'netbanking' = 'gpay'
+    upiApp: 'gpay' | 'phonepe' | 'custom_upi' | 'card' | 'netbanking' = 'gpay',
+    verifiedDetails?: { paymentId?: string; orderId?: string; signature?: string }
   ) => {
     setBookings((prev) =>
       prev.map((b) => {
@@ -1556,21 +1667,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
           const updated: Booking = {
             ...b,
+            status: 'CONFIRMED',
             paymentStatus: 'ADVANCE_PAID',
             paymentMethod: method,
             upiApp,
             adminPlatformCommission: commission,
             merchantPayoutAmount: merchantShare,
+            paymentDetails: {
+              transactionId: verifiedDetails?.paymentId || `TXN_${Date.now()}`,
+              orderId: verifiedDetails?.orderId,
+              amountPaid: advancePaid,
+              paymentMethod: method,
+              status: 'SUCCESS',
+            },
             updatedAt: new Date().toISOString(),
           };
 
           try {
             updateDoc(doc(db, 'bookings', bookingId), {
+              status: 'CONFIRMED',
               paymentStatus: 'ADVANCE_PAID',
               paymentMethod: method,
               upiApp,
               adminPlatformCommission: commission,
               merchantPayoutAmount: merchantShare,
+              paymentDetails: {
+                transactionId: verifiedDetails?.paymentId || `TXN_${Date.now()}`,
+                orderId: verifiedDetails?.orderId || '',
+                amountPaid: advancePaid,
+                paymentMethod: method,
+                status: 'SUCCESS',
+              },
               updatedAt: new Date().toISOString(),
             }).catch(() => {});
           } catch {}
@@ -1973,6 +2100,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setGoogleSignInRole,
         openGoogleSignIn,
         signInWithGoogle,
+        isRedirectChecking,
+        redirectAuthError,
+        clearRedirectAuthError,
         sendPhoneOtp,
         verifyPhoneOtp,
         requireAuth,

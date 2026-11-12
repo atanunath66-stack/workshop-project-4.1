@@ -415,13 +415,13 @@ export const CustomerBookingsView: React.FC<Props> = ({ onDiscoverMore }) => {
             })()}
 
             <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1">
+              <label className="block text-xs font-bold text-[#25152F] mb-1">
                 Reason for Cancellation
               </label>
               <select
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
-                className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs"
+                className="w-full p-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl text-xs font-bold text-[#25152F]"
               >
                 <option>Change of plans / Emergency</option>
                 <option>Running too late</option>

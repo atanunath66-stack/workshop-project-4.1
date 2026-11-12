@@ -667,11 +667,11 @@ export const AdminPortal: React.FC = () => {
 
             {/* City Selector */}
             <div className="flex items-center gap-2">
-              <span className="text-[11px] text-stone-500 font-medium">District:</span>
+              <span className="text-[11px] text-[#25152F] font-bold">District:</span>
               <select
                 value={selectedCityFilter}
                 onChange={(e) => setSelectedCityFilter(e.target.value)}
-                className="px-2.5 py-1.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-800 font-medium cursor-pointer"
+                className="px-3 py-1.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl text-xs text-[#25152F] font-bold cursor-pointer"
               >
                 <option value="all">All Karnataka Locations</option>
                 <option value="tumakuru">Tumakuru (Tumkur)</option>
@@ -687,19 +687,19 @@ export const AdminPortal: React.FC = () => {
 
           {/* Search Box */}
           <div className="relative">
-            <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-[#5A4B63] absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={approvalSearchQuery}
               onChange={(e) => setApprovalSearchQuery(e.target.value)}
               placeholder="Search by restaurant name, owner, phone, district, or area (e.g. Sri Siddaganga Thatte Idli / Kyatsandra)..."
-              className="w-full pl-10 pr-4 py-2.5 bg-stone-50 border border-stone-200 rounded-2xl text-xs focus:ring-2 focus:ring-[#E8A0B5] focus:bg-white transition-all"
+              className="w-full pl-10 pr-16 py-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-2xl text-xs text-[#25152F] font-bold placeholder:text-[#5A4B63] transition-all"
             />
             {approvalSearchQuery && (
               <button
                 type="button"
                 onClick={() => setApprovalSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 text-xs cursor-pointer font-bold"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-500 hover:text-stone-800 text-xs cursor-pointer font-bold px-2 py-0.5 rounded"
               >
                 Clear
               </button>
@@ -1187,19 +1187,19 @@ export const AdminPortal: React.FC = () => {
 
             {/* Search Input for Data Records */}
             <div className="relative min-w-[280px]">
-              <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-[#5A4B63] absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={dataSearchQuery}
                 onChange={(e) => setDataSearchQuery(e.target.value)}
                 placeholder={`Search ${dataRecordType} records...`}
-                className="w-full pl-10 pr-4 py-2 bg-stone-50 border border-stone-200 rounded-2xl text-xs text-stone-900 focus:ring-2 focus:ring-[#E8A0B5] focus:bg-white transition-all"
+                className="w-full pl-10 pr-16 py-2 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-2xl text-xs text-[#25152F] font-bold placeholder:text-[#5A4B63] transition-all"
               />
               {dataSearchQuery && (
                 <button
                   type="button"
                   onClick={() => setDataSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 text-xs font-bold"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-500 hover:text-stone-800 text-xs font-bold"
                 >
                   Clear
                 </button>
@@ -2032,13 +2032,13 @@ export const AdminPortal: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowQuickOnboardModal(false)}
-                  className="px-4 py-2 border border-stone-200 rounded-xl text-stone-600 hover:bg-stone-50 font-semibold cursor-pointer"
+                  className="px-4 py-2 border border-[#DDD4E2] rounded-xl text-stone-700 hover:bg-stone-50 font-bold cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-[#34343A] hover:bg-[#232328] text-white rounded-xl font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+                  className="px-5 py-2 bg-[#A8B88A] hover:bg-[#97A779] text-[#25152F] rounded-xl font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Submit Partner Listing</span>

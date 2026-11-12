@@ -189,7 +189,7 @@ export const InteractiveMapModal: React.FC<Props> = ({
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className="px-2.5 py-1 bg-[#F7F7F8] border border-[#E8E8EC] rounded-lg text-xs font-semibold text-[#34343A] focus:outline-none"
+                  className="px-3 py-1 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-lg text-xs font-bold text-[#25152F] focus:outline-none"
                 >
                   <option value="nearest">Nearest First</option>
                   <option value="rating">Highest Rated</option>

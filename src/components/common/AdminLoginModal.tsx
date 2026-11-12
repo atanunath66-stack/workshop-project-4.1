@@ -92,7 +92,7 @@ export const AdminLoginModal: React.FC<Props> = ({ isOpen, onClose, onSuccess })
 
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-stone-800 mb-1">
+              <label className="block text-xs font-bold text-[#25152F] mb-1">
                 Admin Email
               </label>
               <input
@@ -101,19 +101,19 @@ export const AdminLoginModal: React.FC<Props> = ({ isOpen, onClose, onSuccess })
                 value={adminEmail}
                 onChange={(e) => setAdminEmail(e.target.value)}
                 placeholder="Enter authorized email"
-                className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-900 font-mono focus:ring-2 focus:ring-[#E8A0B5] focus:bg-white transition-all"
+                className="w-full px-3.5 py-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl text-xs text-[#25152F] font-mono font-bold placeholder:text-[#5A4B63] focus:outline-none transition-all"
               />
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="block text-xs font-bold text-stone-800">
+                <label className="block text-xs font-bold text-[#25152F]">
                   Password
                 </label>
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="text-[11px] text-stone-500 hover:text-stone-800 transition-colors flex items-center gap-1 cursor-pointer"
+                  className="text-[11px] text-[#5A4B63] hover:text-[#25152F] transition-colors flex items-center gap-1 cursor-pointer font-semibold"
                 >
                   {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                   <span>{showPassword ? 'Hide' : 'Show'}</span>
@@ -125,16 +125,16 @@ export const AdminLoginModal: React.FC<Props> = ({ isOpen, onClose, onSuccess })
                 value={adminPassword}
                 onChange={(e) => setAdminPassword(e.target.value)}
                 placeholder="Enter password"
-                className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-900 font-mono focus:ring-2 focus:ring-[#E8A0B5] focus:bg-white transition-all"
+                className="w-full px-3.5 py-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl text-xs text-[#25152F] font-mono font-bold placeholder:text-[#5A4B63] focus:outline-none transition-all"
               />
             </div>
           </div>
 
-          <div className="flex items-center justify-between gap-3 pt-3 border-t border-stone-100">
+          <div className="flex items-center justify-between gap-3 pt-3 border-t border-[#DDD4E2]">
             <button
               type="button"
               onClick={handleClose}
-              className="px-4 py-2.5 border border-stone-200 hover:bg-stone-50 text-stone-600 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+              className="px-4 py-2.5 border border-[#DDD4E2] hover:bg-[#F7F2EA] text-[#5A4B63] hover:text-[#25152F] rounded-xl text-xs font-bold transition-colors cursor-pointer"
             >
               Cancel
             </button>
@@ -142,9 +142,9 @@ export const AdminLoginModal: React.FC<Props> = ({ isOpen, onClose, onSuccess })
             <button
               type="submit"
               disabled={isLoading}
-              className="px-5 py-2.5 bg-[#34343A] hover:bg-[#232328] text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              className="px-5 py-2.5 bg-[#A8B88A] hover:bg-[#97A779] text-[#25152F] font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 border border-[#8C9C6F]"
             >
-              <Lock className="w-3.5 h-3.5 text-[#E8A0B5]" />
+              <Lock className="w-3.5 h-3.5 text-[#25152F]" />
               <span>{isLoading ? 'Verifying...' : 'Unlock Super Admin'}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { X, UserPlus, ArrowRight, CheckCircle2 } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
+import { X, Sparkles, AlertCircle, ArrowRight, ShieldCheck, Loader2 } from 'lucide-react';
+import { useApp, isSafariBrowser } from '../../context/AppContext';
 import { UserRole } from '../../types';
 
 interface Props {
@@ -10,48 +10,17 @@ interface Props {
   onSuccess?: () => void;
 }
 
-interface SavedGoogleAccount {
-  name: string;
-  email: string;
-  avatarBg: string;
-  role: UserRole;
-}
-
-const DEFAULT_GOOGLE_PRESETS: SavedGoogleAccount[] = [
-  {
-    name: 'Atanu Foodie',
-    email: 'foodie.explorer@gmail.com',
-    avatarBg: 'bg-emerald-600',
-    role: 'customer',
-  },
-  {
-    name: 'Ramesh (Tumakuru Dosa)',
-    email: 'ramesh.thatteidli@gmail.com',
-    avatarBg: 'bg-amber-600',
-    role: 'owner',
-  },
-  {
-    name: 'Suresh (Bangalore Chaat)',
-    email: 'suresh.chaathouse@gmail.com',
-    avatarBg: 'bg-blue-600',
-    role: 'owner',
-  },
-];
-
 export const GoogleSignInModal: React.FC<Props> = ({
   isOpen,
   onClose,
   targetRole = 'customer',
   onSuccess,
 }) => {
-  const { loginUser, signInWithGoogle } = useApp();
+  const { signInWithGoogle, redirectAuthError, clearRedirectAuthError } = useApp();
   const [selectedRole, setSelectedRole] = useState<UserRole>(targetRole);
-  const [mode, setMode] = useState<'chooser' | 'custom'>('chooser');
-  const [customName, setCustomName] = useState('');
-  const [customEmail, setCustomEmail] = useState('');
-  const [customPhone, setCustomPhone] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [authStatusText, setAuthStatusText] = useState('Connecting to Google...');
 
   // Keep selectedRole in sync with targetRole when opened
   React.useEffect(() => {
@@ -60,69 +29,55 @@ export const GoogleSignInModal: React.FC<Props> = ({
     }
   }, [targetRole, isOpen]);
 
+  // Sync redirect auth errors if coming back from failed redirect
+  React.useEffect(() => {
+    if (redirectAuthError) {
+      setError(redirectAuthError);
+    }
+  }, [redirectAuthError]);
+
   if (!isOpen) return null;
 
-  const handleGoogleOAuth = async (forceRedirect: boolean = false) => {
+  const handleGoogleSignIn = async (forceRedirect: boolean = false) => {
     setIsLoading(true);
     setError('');
+    clearRedirectAuthError?.();
+
+    const isSafari = isSafariBrowser();
+    if (forceRedirect || isSafari) {
+      setAuthStatusText('Redirecting to Google for secure sign-in...');
+    } else {
+      setAuthStatusText('Opening Google Sign-In window...');
+    }
+
     try {
       const res = await signInWithGoogle(selectedRole, forceRedirect);
       if (res.success) {
+        if (res.warning?.includes('Redirecting')) {
+          setAuthStatusText(res.warning);
+          // Wait for browser top-level navigation to proceed
+          return;
+        }
+        setAuthStatusText('Authentication successful! Synchronizing profile...');
         if (onSuccess) onSuccess();
         onClose();
       } else {
-        setError(res.error || 'Google Sign-In was cancelled or blocked by browser.');
+        setError(res.error || 'Google Sign-In could not be completed. Please try again.');
       }
     } catch (err: any) {
-      setError(err?.message || 'Authentication error.');
+      setError(err?.message || 'Authentication error occurred.');
     } finally {
       setIsLoading(false);
     }
   };
-
-  const handleSelectAccount = (account: SavedGoogleAccount) => {
-    setIsLoading(true);
-    setError('');
-    try {
-      loginUser(account.email, account.name, selectedRole);
-      if (onSuccess) onSuccess();
-      onClose();
-    } catch (err: any) {
-      setError(err?.message || 'Authentication error.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleCustomSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!customEmail) return;
-    setIsLoading(true);
-    setError('');
-    try {
-      loginUser(customEmail.trim(), customName.trim() || customEmail.split('@')[0], selectedRole, {
-        phone: customPhone.trim() || undefined,
-      });
-      if (onSuccess) onSuccess();
-      onClose();
-    } catch (err: any) {
-      setError(err?.message || 'Authentication error.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const filteredPresets = DEFAULT_GOOGLE_PRESETS.filter(
-    (a) => a.role === selectedRole || a.role === 'customer'
-  );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-stone-200 overflow-hidden">
-        {/* Google Header */}
-        <div className="p-6 border-b border-stone-100 flex items-start justify-between">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#25152F]/70 backdrop-blur-xs p-4 animate-in fade-in">
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-[#DDD4E2] overflow-hidden my-auto">
+        {/* Header - Warm Ivory Background with Midnight Plum Title */}
+        <div className="p-6 bg-[#F7F2EA] border-b border-[#DDD4E2] flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-white border border-stone-200 shadow-xs flex items-center justify-center p-2">
+            <div className="w-10 h-10 rounded-2xl bg-white border border-[#DDD4E2] shadow-xs flex items-center justify-center p-2">
               <svg className="w-full h-full" viewBox="0 0 24 24">
                 <path
                   fill="#4285F4"
@@ -143,11 +98,11 @@ export const GoogleSignInModal: React.FC<Props> = ({
               </svg>
             </div>
             <div>
-              <h2 className="text-base font-bold text-stone-900 font-display">
+              <h2 className="text-base font-bold text-[#25152F] font-display">
                 Sign in with Google
               </h2>
-              <p className="text-xs text-stone-500">
-                Continue to <span className="font-semibold text-stone-800">ZAikya</span>
+              <p className="text-xs text-[#5A4B63]">
+                Continue to <span className="font-semibold text-[#25152F]">ZAikya</span>
               </p>
             </div>
           </div>
@@ -155,7 +110,8 @@ export const GoogleSignInModal: React.FC<Props> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-full text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors cursor-pointer"
+            disabled={isLoading}
+            className="p-1.5 rounded-full text-[#5A4B63] hover:text-[#25152F] hover:bg-black/5 transition-colors cursor-pointer disabled:opacity-50"
             aria-label="Close Google Sign In"
           >
             <X className="w-5 h-5" />
@@ -163,26 +119,28 @@ export const GoogleSignInModal: React.FC<Props> = ({
         </div>
 
         {/* Role Toggle Bar */}
-        <div className="px-6 pt-4 pb-2">
-          <div className="flex p-1 bg-stone-100 rounded-2xl text-xs font-semibold">
+        <div className="px-6 pt-5 pb-2">
+          <div className="flex p-1 bg-[#F7F2EA] border border-[#DDD4E2] rounded-2xl text-xs font-semibold">
             <button
               type="button"
+              disabled={isLoading}
               onClick={() => setSelectedRole('customer')}
-              className={`flex-1 py-1.5 rounded-xl transition-all cursor-pointer ${
+              className={`flex-1 py-2 rounded-xl transition-all cursor-pointer ${
                 selectedRole === 'customer'
-                  ? 'bg-white text-stone-900 shadow-xs font-bold'
-                  : 'text-stone-500 hover:text-stone-900'
+                  ? 'bg-white text-[#25152F] shadow-xs font-bold border border-[#DDD4E2]'
+                  : 'text-[#5A4B63] hover:text-[#25152F]'
               }`}
             >
               Sign in as Customer
             </button>
             <button
               type="button"
+              disabled={isLoading}
               onClick={() => setSelectedRole('owner')}
-              className={`flex-1 py-1.5 rounded-xl transition-all cursor-pointer ${
+              className={`flex-1 py-2 rounded-xl transition-all cursor-pointer ${
                 selectedRole === 'owner'
-                  ? 'bg-white text-amber-900 shadow-xs font-bold'
-                  : 'text-stone-500 hover:text-stone-900'
+                  ? 'bg-white text-[#25152F] shadow-xs font-bold border border-[#DDD4E2]'
+                  : 'text-[#5A4B63] hover:text-[#25152F]'
               }`}
             >
               Sign in as Shop Owner
@@ -191,15 +149,19 @@ export const GoogleSignInModal: React.FC<Props> = ({
         </div>
 
         {/* Content Body */}
-        <div className="p-6 pt-2 space-y-4">
+        <div className="p-6 pt-3 space-y-4">
           {error && (
-            <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs font-medium space-y-2">
-              <p>{error}</p>
-              <div className="flex gap-2 pt-1">
+            <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-900 rounded-2xl text-xs font-medium space-y-2">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <p className="leading-relaxed">{error}</p>
+              </div>
+              <div className="flex gap-2 pt-1 pl-6">
                 <button
                   type="button"
-                  onClick={() => handleGoogleOAuth(true)}
-                  className="px-2.5 py-1 bg-rose-600 text-white rounded-lg text-[11px] font-bold hover:bg-rose-700 transition-colors cursor-pointer"
+                  onClick={() => handleGoogleSignIn(true)}
+                  disabled={isLoading}
+                  className="px-3 py-1.5 bg-[#B96D79] hover:bg-[#a65d69] text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
                 >
                   Try Redirect Sign-In
                 </button>
@@ -207,179 +169,69 @@ export const GoogleSignInModal: React.FC<Props> = ({
             </div>
           )}
 
-          {/* Primary Official Google OAuth Action */}
-          <div className="space-y-2">
-            <button
-              type="button"
-              onClick={() => handleGoogleOAuth(false)}
-              disabled={isLoading}
-              className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white border-2 border-stone-200 hover:border-[#E8A0B5] hover:bg-[#FCE8EF]/30 rounded-2xl text-xs font-bold text-stone-800 shadow-sm hover:shadow transition-all cursor-pointer disabled:opacity-50"
-            >
-              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                <path
-                  fill="#4285F4"
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                />
-              </svg>
-              <span>{isLoading ? 'Connecting...' : 'Continue with Google Account (OAuth)'}</span>
-            </button>
-
-            <div className="flex items-center justify-between text-[11px] text-stone-500 px-1">
-              <span>Popup blocked or mobile browser?</span>
-              <button
-                type="button"
-                onClick={() => handleGoogleOAuth(true)}
-                className="text-[#C96884] font-semibold hover:underline cursor-pointer"
-              >
-                Use Redirect Sign-In
-              </button>
-            </div>
-          </div>
-
-          <div className="relative flex py-1 items-center">
-            <div className="flex-grow border-t border-stone-200"></div>
-            <span className="flex-shrink mx-3 text-[11px] font-semibold text-stone-400">or quick-select account</span>
-            <div className="flex-grow border-t border-stone-200"></div>
-          </div>
-
-          {mode === 'chooser' ? (
-            <div className="space-y-3">
-              <div className="divide-y divide-stone-100 border border-stone-200 rounded-2xl overflow-hidden">
-                {filteredPresets.map((acc) => (
-                  <button
-                    key={acc.email}
-                    type="button"
-                    onClick={() => handleSelectAccount(acc)}
-                    disabled={isLoading}
-                    className="w-full p-3 flex items-center justify-between hover:bg-stone-50 transition-colors text-left cursor-pointer group disabled:opacity-50"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div className={`w-8 h-8 rounded-full ${acc.avatarBg} text-white font-bold flex items-center justify-center text-xs shadow-xs`}>
-                        {acc.name[0]}
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-stone-900 group-hover:text-[#C96884] transition-colors">
-                          {acc.name}
-                        </div>
-                        <div className="text-[11px] text-stone-500 font-mono">
-                          {acc.email}
-                        </div>
-                      </div>
-                    </div>
-                    <span className="text-[10px] font-bold text-stone-400 group-hover:text-[#C96884] flex items-center gap-1">
-                      <span>Select</span>
-                      <ArrowRight className="w-3 h-3" />
-                    </span>
-                  </button>
-                ))}
-
-                {/* Enter Custom Google Account Option */}
-                <button
-                  type="button"
-                  onClick={() => setMode('custom')}
-                  className="w-full p-3 flex items-center gap-3 hover:bg-[#FCE8EF]/40 transition-colors text-left cursor-pointer text-stone-700 hover:text-[#C96884]"
-                >
-                  <div className="w-8 h-8 rounded-full bg-stone-100 border border-stone-200 text-stone-600 flex items-center justify-center">
-                    <UserPlus className="w-4 h-4" />
-                  </div>
-                  <div className="text-xs font-bold">
-                    Use another email account
-                  </div>
-                </button>
-              </div>
-
-              <p className="text-[11px] text-stone-400 text-center pt-1 leading-relaxed">
-                By continuing, your {selectedRole} profile will be securely initialized on ZAikya.
-              </p>
+          {isLoading ? (
+            <div className="py-8 flex flex-col items-center justify-center gap-3 text-center">
+              <Loader2 className="w-8 h-8 text-[#A8B88A] animate-spin" />
+              <p className="text-xs font-semibold text-[#25152F]">{authStatusText}</p>
+              <p className="text-[11px] text-[#5A4B63]">Please complete the sign-in prompt from Google</p>
             </div>
           ) : (
-            <form onSubmit={handleCustomSubmit} className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-stone-800">
-                  Enter your Account details:
-                </span>
+            <div className="space-y-4">
+              <p className="text-xs text-[#5A4B63] leading-relaxed">
+                Connect your verified Google Account to pre-book tables, pre-order dishes, and access your profile securely on ZAikya.
+              </p>
+
+              {/* Primary Sign In Button (signInWithPopup) */}
+              <button
+                type="button"
+                onClick={() => handleGoogleSignIn(false)}
+                disabled={isLoading}
+                className="w-full flex items-center justify-center gap-3 py-3.5 px-4 bg-white hover:bg-[#F7F2EA] border-2 border-[#DDD4E2] hover:border-[#A8B88A] rounded-2xl text-sm font-bold text-[#25152F] shadow-sm hover:shadow transition-all cursor-pointer disabled:opacity-50"
+              >
+                <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
+                  <path
+                    fill="#4285F4"
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                  />
+                </svg>
+                <span>Continue with Google</span>
+              </button>
+
+              {/* Safari / Mobile Fallback: Redirect Mode */}
+              <div className="p-3 bg-[#F7F2EA] rounded-2xl border border-[#DDD4E2] flex items-center justify-between text-xs">
+                <div className="text-left">
+                  <span className="font-bold text-[#25152F] block">Popup blocked or on Safari?</span>
+                  <span className="text-[11px] text-[#5A4B63]">Use direct page redirect instead</span>
+                </div>
                 <button
                   type="button"
-                  onClick={() => setMode('chooser')}
-                  className="text-xs text-[#C96884] hover:underline cursor-pointer"
-                >
-                  Back to accounts
-                </button>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-stone-700 mb-1">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={customName}
-                  onChange={(e) => setCustomName(e.target.value)}
-                  placeholder="e.g. Ramesh Kumar"
-                  className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-900 focus:ring-2 focus:ring-[#E8A0B5] focus:bg-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-stone-700 mb-1">
-                  Email Address *
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={customEmail}
-                  onChange={(e) => setCustomEmail(e.target.value)}
-                  placeholder="e.g. user@gmail.com"
-                  className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-900 font-mono focus:ring-2 focus:ring-[#E8A0B5] focus:bg-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-stone-700 mb-1">
-                  Phone Number (Optional)
-                </label>
-                <input
-                  type="tel"
-                  value={customPhone}
-                  onChange={(e) => setCustomPhone(e.target.value)}
-                  placeholder="+91 98765 43210"
-                  className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-900 focus:ring-2 focus:ring-[#E8A0B5] focus:bg-white"
-                />
-              </div>
-
-              <div className="pt-2 flex items-center justify-between gap-2">
-                <button
-                  type="button"
-                  onClick={() => setMode('chooser')}
-                  className="px-4 py-2 border border-stone-200 rounded-xl text-xs font-semibold text-stone-600 hover:bg-stone-50 cursor-pointer"
-                >
-                  Cancel
-                </button>
-
-                <button
-                  type="submit"
+                  onClick={() => handleGoogleSignIn(true)}
                   disabled={isLoading}
-                  className="flex-1 py-2 px-4 bg-[#34343A] hover:bg-[#232328] text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="px-3 py-1.5 bg-[#A8B88A] hover:bg-[#97A779] text-[#25152F] font-bold rounded-xl transition-all shadow-xs cursor-pointer disabled:opacity-50 shrink-0"
                 >
-                  <span>Sign In as {selectedRole === 'owner' ? 'Shop Owner' : 'Customer'}</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  Redirect Sign-In
                 </button>
               </div>
-            </form>
+            </div>
           )}
+
+          {/* Security Assurance */}
+          <div className="pt-2 flex items-center justify-center gap-2 text-xs text-[#5A4B63] border-t border-[#DDD4E2]">
+            <ShieldCheck className="w-4 h-4 text-[#A8B88A] shrink-0" />
+            <span>Official Firebase Google OAuth. Passwords are never shared.</span>
+          </div>
         </div>
       </div>
     </div>

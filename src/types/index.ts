@@ -211,6 +211,7 @@ export interface Booking {
   guests?: number;
   paymentDetails?: {
     transactionId?: string;
+    orderId?: string;
     amountPaid?: number;
     paymentMethod?: string;
     status?: string;

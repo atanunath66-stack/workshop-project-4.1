@@ -120,7 +120,7 @@ export const AdminGatekeeperLock: React.FC<Props> = ({ onUnlockSuccess, onCancel
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           <div>
-            <label className="block text-stone-300 font-semibold mb-1.5">
+            <label className="block text-stone-200 font-bold mb-1.5">
               Admin Email
             </label>
             <input
@@ -132,19 +132,19 @@ export const AdminGatekeeperLock: React.FC<Props> = ({ onUnlockSuccess, onCancel
                 setError(null);
               }}
               placeholder="Enter authorized email"
-              className="w-full px-4 py-3 bg-stone-950 border border-stone-800 focus:border-[#E8A0B5] rounded-xl text-stone-100 placeholder:text-stone-600 focus:outline-none font-mono text-xs transition-colors"
+              className="w-full px-4 py-3 bg-stone-900 border-2 border-stone-700 focus:border-[#A8B88A] rounded-xl text-white placeholder:text-stone-400 focus:outline-none font-mono text-xs font-bold transition-colors"
             />
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-stone-300 font-semibold">
+              <label className="text-stone-200 font-bold">
                 Password
               </label>
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="text-[11px] text-stone-400 hover:text-stone-200 flex items-center gap-1 transition-colors cursor-pointer"
+                className="text-[11px] text-[#E9D8B5] hover:text-white flex items-center gap-1 transition-colors cursor-pointer font-bold"
               >
                 {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                 <span>{showPassword ? 'Hide' : 'Show'}</span>
@@ -160,9 +160,9 @@ export const AdminGatekeeperLock: React.FC<Props> = ({ onUnlockSuccess, onCancel
                   setError(null);
                 }}
                 placeholder="Enter password"
-                className="w-full pl-4 pr-10 py-3 bg-stone-950 border border-stone-800 focus:border-[#E8A0B5] rounded-xl text-stone-100 placeholder:text-stone-600 focus:outline-none font-mono text-xs transition-colors"
+                className="w-full pl-4 pr-10 py-3 bg-stone-900 border-2 border-stone-700 focus:border-[#A8B88A] rounded-xl text-white placeholder:text-stone-400 focus:outline-none font-mono text-xs font-bold transition-colors"
               />
-              <Lock className="w-4 h-4 text-stone-600 absolute right-3.5 top-3.5" />
+              <Lock className="w-4 h-4 text-stone-400 absolute right-3.5 top-3.5" />
             </div>
           </div>
 
@@ -171,7 +171,7 @@ export const AdminGatekeeperLock: React.FC<Props> = ({ onUnlockSuccess, onCancel
               <button
                 type="button"
                 onClick={onCancel}
-                className="w-full sm:w-auto px-5 py-3 rounded-xl border border-stone-800 text-stone-400 hover:text-stone-200 hover:bg-stone-800 transition-colors font-semibold flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full sm:w-auto px-5 py-3 rounded-xl border-2 border-stone-700 text-stone-200 hover:text-white hover:bg-stone-800 transition-colors font-bold flex items-center justify-center gap-2 cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Return to Discovery</span>
@@ -180,9 +180,9 @@ export const AdminGatekeeperLock: React.FC<Props> = ({ onUnlockSuccess, onCancel
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex-1 py-3 px-6 bg-[#34343A] hover:bg-[#232328] border border-[#E8A0B5]/40 text-white rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+              className="w-full flex-1 py-3 px-6 bg-[#A8B88A] hover:bg-[#97A779] border border-[#8C9C6F] text-[#25152F] rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
             >
-              <Shield className="w-4 h-4 text-[#E8A0B5]" />
+              <Shield className="w-4 h-4 text-[#25152F]" />
               <span>{isLoading ? 'Verifying Credentials...' : 'Unlock Super Admin Console'}</span>
             </button>
           </div>

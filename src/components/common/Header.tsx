@@ -112,30 +112,30 @@ export const Header: React.FC<Props> = ({ activeView, setActiveView }) => {
               <button
                 type="button"
                 onClick={() => setIsLocationModalOpen(true)}
-                className="group relative flex items-center gap-2 px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs font-semibold text-[#34343A] bg-[#F7F7F8] hover:bg-[#FCE8EF]/50 border border-[#E8E8EC] hover:border-[#E8A0B5] rounded-2xl transition-all shadow-xs cursor-pointer"
+                className="group relative flex items-center gap-2 px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs font-semibold text-[#25152F] bg-[#F7F2EA] hover:bg-[#EDE6DA] border border-[#DDD4E2] hover:border-[#A8B88A] rounded-2xl transition-all shadow-xs cursor-pointer"
                 title="Change discovery neighborhood or city"
               >
                 {/* Live GPS Radar Pulse Beacon */}
                 <span className="relative flex h-2 w-2 shrink-0">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#E8A0B5] opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#C96884]" />
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#A8B88A] opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#B96D79]" />
                 </span>
 
                 <div className="flex items-baseline gap-1 text-left">
-                  <span className="font-bold text-[#34343A] max-w-[100px] sm:max-w-[130px] truncate text-[11px] sm:text-xs">
+                  <span className="font-bold text-[#25152F] max-w-[100px] sm:max-w-[130px] truncate text-[11px] sm:text-xs">
                     {mainArea}
                   </span>
-                  <span className="hidden sm:inline text-[11px] text-[#777781] font-normal">
+                  <span className="hidden sm:inline text-[11px] text-[#5A4B63] font-medium">
                     · {cityPart}
                   </span>
                 </div>
 
-                <ChevronDown className="w-3 h-3 text-[#777781] group-hover:translate-y-0.5 transition-transform shrink-0" />
+                <ChevronDown className="w-3.5 h-3.5 text-[#5A4B63] group-hover:translate-y-0.5 transition-transform shrink-0" />
               </button>
             </div>
 
-            {/* Zone 2: Navigation Links */}
-            <nav className="hidden md:flex items-center gap-6 text-xs font-semibold text-[#777781]">
+            {/* Zone 2: Navigation Links with high contrast */}
+            <nav className="hidden md:flex items-center gap-6 text-xs font-semibold">
               <button
                 onClick={() => {
                   setSelectedRestaurant(null);
@@ -143,8 +143,8 @@ export const Header: React.FC<Props> = ({ activeView, setActiveView }) => {
                 }}
                 className={`transition-colors whitespace-nowrap shrink-0 py-1 cursor-pointer ${
                   activeView === 'discover'
-                    ? 'text-[#34343A] border-b-2 border-[#E8A0B5] font-bold'
-                    : 'hover:text-[#34343A]'
+                    ? 'text-[#E9D8B5] border-b-2 border-[#A8B88A] font-bold'
+                    : 'text-stone-300 hover:text-white'
                 }`}
               >
                 Discover Gems
@@ -157,8 +157,8 @@ export const Header: React.FC<Props> = ({ activeView, setActiveView }) => {
                 }}
                 className={`transition-colors whitespace-nowrap shrink-0 py-1 cursor-pointer ${
                   activeView === 'map'
-                    ? 'text-[#34343A] border-b-2 border-[#E8A0B5] font-bold'
-                    : 'hover:text-[#34343A]'
+                    ? 'text-[#E9D8B5] border-b-2 border-[#A8B88A] font-bold'
+                    : 'text-stone-300 hover:text-white'
                 }`}
               >
                 Interactive Map
@@ -170,8 +170,8 @@ export const Header: React.FC<Props> = ({ activeView, setActiveView }) => {
                 }}
                 className={`transition-colors whitespace-nowrap shrink-0 py-1 cursor-pointer ${
                   activeView === 'bookings'
-                    ? 'text-[#34343A] border-b-2 border-[#E8A0B5] font-bold'
-                    : 'hover:text-[#34343A]'
+                    ? 'text-[#E9D8B5] border-b-2 border-[#A8B88A] font-bold'
+                    : 'text-stone-300 hover:text-white'
                 }`}
               >
                 My Bookings & Receipts
@@ -183,8 +183,8 @@ export const Header: React.FC<Props> = ({ activeView, setActiveView }) => {
                 }}
                 className={`transition-colors whitespace-nowrap shrink-0 py-1 cursor-pointer ${
                   activeView === 'profile'
-                    ? 'text-[#34343A] border-b-2 border-[#E8A0B5] font-bold'
-                    : 'hover:text-[#34343A]'
+                    ? 'text-[#E9D8B5] border-b-2 border-[#A8B88A] font-bold'
+                    : 'text-stone-300 hover:text-white'
                 }`}
               >
                 My Profile
@@ -195,7 +195,7 @@ export const Header: React.FC<Props> = ({ activeView, setActiveView }) => {
                   setSelectedRestaurant(null);
                   setActiveView('discover');
                 }}
-                className="hover:text-[#34343A] transition-colors whitespace-nowrap shrink-0 py-1 text-[#777781] cursor-pointer"
+                className="hover:text-white transition-colors whitespace-nowrap shrink-0 py-1 text-stone-300 cursor-pointer"
               >
                 Deals & Offers
               </button>
@@ -207,20 +207,20 @@ export const Header: React.FC<Props> = ({ activeView, setActiveView }) => {
               <div className="relative">
                 <button
                   onClick={() => setIsRoleDropdownOpen(!isRoleDropdownOpen)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-2xl border transition-all cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-2xl border transition-all cursor-pointer ${
                     currentUser.role === 'admin'
-                      ? 'bg-[#34343A] text-white border-[#34343A]'
+                      ? 'bg-[#25152F] text-[#E9D8B5] border-[#B96D79]'
                       : currentUser.role === 'owner'
-                      ? 'bg-[#FCE8EF] text-[#34343A] border-[#F8D3DF]'
-                      : 'bg-[#F7F7F8] text-[#34343A] border-[#E8E8EC] hover:bg-[#E5E7EB]'
+                      ? 'bg-[#F7F2EA] text-[#25152F] border-[#DDD4E2] hover:bg-[#EDE6DA]'
+                      : 'bg-[#F7F2EA] text-[#25152F] border-[#DDD4E2] hover:bg-[#EDE6DA]'
                   }`}
                 >
                   {currentUser.role === 'admin' ? (
-                    <Shield className="w-3.5 h-3.5 text-[#E8A0B5]" />
+                    <Shield className="w-3.5 h-3.5 text-[#E9D8B5]" />
                   ) : currentUser.role === 'owner' ? (
-                    <Store className="w-3.5 h-3.5 text-[#C96884]" />
+                    <Store className="w-3.5 h-3.5 text-[#B96D79]" />
                   ) : (
-                    <UtensilsCrossed className="w-3.5 h-3.5 text-[#777781]" />
+                    <UtensilsCrossed className="w-3.5 h-3.5 text-[#5A4B63]" />
                   )}
                   <span className="capitalize">
                     {currentUser.role === 'admin'
@@ -233,60 +233,60 @@ export const Header: React.FC<Props> = ({ activeView, setActiveView }) => {
                 </button>
 
                 {isRoleDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-60 bg-white rounded-3xl shadow-xl border border-[#E8E8EC] py-2 z-50 text-xs animate-in fade-in">
-                    <div className="px-4 py-1.5 text-[10px] font-bold text-[#777781] uppercase tracking-wider">
+                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-3xl shadow-xl border border-[#DDD4E2] py-2 z-50 text-xs animate-in fade-in">
+                    <div className="px-4 py-1.5 text-[10px] font-bold text-[#5A4B63] uppercase tracking-wider">
                       Switch Portal Experience
                     </div>
                     <button
                       onClick={() => handleRoleSelect('customer')}
-                      className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-left hover:bg-[#F7F7F8] cursor-pointer ${
+                      className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-left hover:bg-[#F7F2EA] cursor-pointer ${
                         currentUser.role === 'customer'
-                          ? 'font-bold text-[#34343A] bg-[#FCE8EF]/40'
-                          : 'text-[#34343A]'
+                          ? 'font-bold text-[#25152F] bg-[#F7F2EA]'
+                          : 'text-[#25152F]'
                       }`}
                     >
-                      <UtensilsCrossed className="w-4 h-4 text-[#C96884]" />
+                      <UtensilsCrossed className="w-4 h-4 text-[#B96D79]" />
                       <div>
-                        <div>Customer Portal</div>
-                        <div className="text-[10px] text-[#777781]">Discover, pre-book dishes & dine</div>
+                        <div className="font-bold text-[#25152F]">Customer Portal</div>
+                        <div className="text-[10px] text-[#5A4B63]">Discover, pre-book dishes &amp; dine</div>
                       </div>
                     </button>
                     <button
                       onClick={() => handleRoleSelect('owner')}
-                      className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-left hover:bg-[#F7F7F8] cursor-pointer ${
+                      className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-left hover:bg-[#F7F2EA] cursor-pointer ${
                         currentUser.role === 'owner'
-                          ? 'font-bold text-[#34343A] bg-[#FCE8EF]/40'
-                          : 'text-[#34343A]'
+                          ? 'font-bold text-[#25152F] bg-[#F7F2EA]'
+                          : 'text-[#25152F]'
                       }`}
                     >
-                      <Store className="w-4 h-4 text-[#C96884]" />
+                      <Store className="w-4 h-4 text-[#B96D79]" />
                       <div>
-                        <div>Store Owner Portal</div>
-                        <div className="text-[10px] text-[#777781]">Orders, menu, tables & revenue</div>
+                        <div className="font-bold text-[#25152F]">Store Owner Portal</div>
+                        <div className="text-[10px] text-[#5A4B63]">Orders, menu, tables &amp; revenue</div>
                       </div>
                     </button>
                     <button
                       onClick={() => handleRoleSelect('admin')}
-                      className={`w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-[#F7F7F8] cursor-pointer ${
+                      className={`w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-[#F7F2EA] cursor-pointer ${
                         currentUser.role === 'admin'
-                          ? 'font-bold text-[#34343A] bg-[#FCE8EF]/40'
-                          : 'text-[#34343A]'
+                          ? 'font-bold text-[#25152F] bg-[#F7F2EA]'
+                          : 'text-[#25152F]'
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
-                        <Shield className="w-4 h-4 text-[#C96884]" />
+                        <Shield className="w-4 h-4 text-[#B96D79]" />
                         <div>
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1.5 font-bold text-[#25152F]">
                             <span>Super Admin Portal</span>
                             {isAdminAuthenticated ? (
-                              <span className="px-1.5 py-0.2 bg-emerald-100 text-[#238B68] text-[9px] rounded font-mono font-bold">
+                              <span className="px-1.5 py-0.5 bg-[#A8B88A]/30 text-[#25152F] text-[9px] rounded font-mono font-bold">
                                 UNLOCKED
                               </span>
                             ) : (
-                              <Lock className="w-3 h-3 text-[#777781]" />
+                              <Lock className="w-3 h-3 text-[#5A4B63]" />
                             )}
                           </div>
-                          <div className="text-[10px] text-[#777781]">
+                          <div className="text-[10px] text-[#5A4B63]">
                             {isAdminAuthenticated
                               ? 'Governance & approvals'
                               : 'Authorized master credentials'}
@@ -296,10 +296,10 @@ export const Header: React.FC<Props> = ({ activeView, setActiveView }) => {
                     </button>
 
                     {isAdminAuthenticated && (
-                      <div className="pt-1 mt-1 border-t border-[#E8E8EC]">
+                      <div className="pt-1 mt-1 border-t border-[#DDD4E2]">
                         <button
                           onClick={handleAdminLock}
-                          className="w-full flex items-center gap-2 px-4 py-2 text-[#D95368] hover:bg-[#FCE8EF]/50 text-[11px] font-semibold transition-colors cursor-pointer"
+                          className="w-full flex items-center gap-2 px-4 py-2 text-rose-700 hover:bg-rose-50 text-[11px] font-semibold transition-colors cursor-pointer"
                         >
                           <LogOut className="w-3.5 h-3.5" />
                           <span>Lock Super Admin Session</span>
@@ -315,39 +315,39 @@ export const Header: React.FC<Props> = ({ activeView, setActiveView }) => {
                 <button
                   onClick={() => setIsNotifDropdownOpen(!isNotifDropdownOpen)}
                   aria-label="View notifications"
-                  className="p-2 rounded-2xl text-[#777781] hover:text-[#34343A] hover:bg-[#E5E7EB] transition-colors relative cursor-pointer"
+                  className="p-2 rounded-2xl text-stone-300 hover:text-white hover:bg-white/10 transition-colors relative cursor-pointer"
                 >
                   <Bell className="w-4 h-4" />
                   {unreadNotifs.length > 0 && (
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#E8A0B5] ring-2 ring-white" />
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#B96D79] ring-2 ring-[#0A0C0E]" />
                   )}
                 </button>
 
                 {isNotifDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-3xl shadow-xl border border-[#E8E8EC] py-2 z-50 animate-in fade-in">
-                    <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#E8E8EC]">
-                      <span className="text-xs font-bold text-[#34343A] font-display">Notifications</span>
-                      <span className="text-[11px] text-[#777781] font-mono">{unreadNotifs.length} new</span>
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-3xl shadow-xl border border-[#DDD4E2] py-2 z-50 animate-in fade-in">
+                    <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#DDD4E2] bg-[#F7F2EA]">
+                      <span className="text-xs font-bold text-[#25152F] font-display">Notifications</span>
+                      <span className="text-[11px] text-[#5A4B63] font-mono">{unreadNotifs.length} new</span>
                     </div>
-                    <div className="max-h-72 overflow-y-auto divide-y divide-[#E8E8EC]">
+                    <div className="max-h-72 overflow-y-auto divide-y divide-[#DDD4E2]">
                       {notifications.length > 0 ? (
                         notifications.map((n) => (
                           <div
                             key={n.id}
                             onClick={() => markNotificationAsRead(n.id)}
-                            className={`p-3 text-xs hover:bg-[#F7F7F8] cursor-pointer transition-colors ${
-                              !n.isRead ? 'bg-[#FCE8EF]/30' : ''
+                            className={`p-3 text-xs hover:bg-[#F7F2EA] cursor-pointer transition-colors ${
+                              !n.isRead ? 'bg-[#E9D8B5]/20' : ''
                             }`}
                           >
-                            <div className="font-semibold text-[#34343A]">{n.title}</div>
-                            <div className="text-[#777781] text-[11px] mt-0.5">{n.message}</div>
-                            <div className="text-[10px] text-[#777781] mt-1 font-mono">
+                            <div className="font-bold text-[#25152F]">{n.title}</div>
+                            <div className="text-[#5A4B63] text-[11px] mt-0.5">{n.message}</div>
+                            <div className="text-[10px] text-[#5A4B63] mt-1 font-mono">
                               {new Date(n.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </div>
                           </div>
                         ))
-                          ) : (
-                        <div className="p-4 text-xs text-[#777781] text-center">No notifications yet</div>
+                      ) : (
+                        <div className="p-4 text-xs text-[#5A4B63] text-center">No notifications yet</div>
                       )}
                     </div>
                   </div>
@@ -362,9 +362,9 @@ export const Header: React.FC<Props> = ({ activeView, setActiveView }) => {
                     setAuthModalRole(currentUser.role === 'owner' ? 'owner' : 'customer');
                     setIsAuthModalOpen(true);
                   }}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#34343A] hover:bg-[#232328] text-white text-xs font-bold rounded-2xl transition-all shadow-xs cursor-pointer border border-[#E8A0B5]/40"
+                  className="flex items-center gap-1.5 px-4 py-2 bg-[#A8B88A] hover:bg-[#97A779] text-[#25152F] text-xs font-bold rounded-2xl transition-all shadow-sm cursor-pointer border border-[#8C9C6F]"
                 >
-                  <UserIcon className="w-3.5 h-3.5 text-[#E8A0B5]" />
+                  <UserIcon className="w-3.5 h-3.5 text-[#25152F]" />
                   <span>Sign In</span>
                 </button>
               ) : (
@@ -372,7 +372,7 @@ export const Header: React.FC<Props> = ({ activeView, setActiveView }) => {
                   <button
                     type="button"
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-[#F7F7F8] hover:bg-[#E5E7EB] text-[#34343A] text-xs font-semibold rounded-2xl transition-all border border-[#E8E8EC] cursor-pointer"
+                    className="flex items-center gap-2 px-3.5 py-1.5 bg-[#F7F2EA] hover:bg-[#EDE6DA] text-[#25152F] text-xs font-bold rounded-2xl transition-all border border-[#DDD4E2] cursor-pointer"
                   >
                     <span className="w-5 h-5 rounded-full bg-[#E8A0B5] text-[#34343A] flex items-center justify-center text-[10px] font-bold">
                       {currentUser.name ? currentUser.name[0].toUpperCase() : 'U'}

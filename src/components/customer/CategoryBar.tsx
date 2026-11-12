@@ -22,7 +22,7 @@ export const CategoryBar: React.FC = () => {
   ];
 
   return (
-    <section className="bg-white border-b border-[#E8E8EC] py-3 sticky top-16 z-30 shadow-2xs">
+    <section className="bg-[#F7F2EA]/90 backdrop-blur-md border-b border-[#DDD4E2] py-3 sticky top-16 z-30 shadow-2xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
           {CATEGORIES.map((cat) => {
@@ -32,10 +32,10 @@ export const CategoryBar: React.FC = () => {
                 key={cat.name}
                 type="button"
                 onClick={() => setActiveCategory(cat.name)}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap shrink-0 transition-all cursor-pointer ${
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer ${
                   isActive
-                    ? 'bg-[#FCE8EF] text-[#34343A] border border-[#F8D3DF] font-bold shadow-xs'
-                    : 'bg-[#F7F7F8] hover:bg-[#E5E7EB] text-[#777781] border border-[#E8E8EC]'
+                    ? 'bg-[#25152F] text-[#F7F2EA] border-2 border-[#25152F] shadow-sm'
+                    : 'bg-white hover:bg-[#F7F2EA] text-[#25152F] border border-[#DDD4E2] hover:border-[#A8B88A]'
                 }`}
               >
                 <span>{cat.icon}</span>

@@ -190,16 +190,16 @@ export const LocationSelectorModal: React.FC<Props> = ({ isOpen, onClose }) => {
         {/* Modal Body */}
         <div className="p-6 overflow-y-auto space-y-5">
           {/* Action 1: Use Current Location */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-4 bg-[#FCE8EF]/40 border border-[#F8D3DF] rounded-2xl">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-4 bg-[#F7F2EA] border border-[#DDD4E2] rounded-2xl">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-white text-[#C96884] flex items-center justify-center shrink-0 shadow-2xs">
+              <div className="w-8 h-8 rounded-xl bg-white text-[#B96D79] flex items-center justify-center shrink-0 shadow-2xs border border-[#DDD4E2]">
                 <Navigation className="w-4 h-4" />
               </div>
               <div>
-                <div className="text-xs font-bold text-[#34343A]">
+                <div className="text-xs font-bold text-[#25152F]">
                   Use My Current Location
                 </div>
-                <div className="text-[11px] text-[#777781]">
+                <div className="text-[11px] text-[#5A4B63]">
                   Detect GPS location with explicit browser permission.
                 </div>
               </div>
@@ -208,7 +208,7 @@ export const LocationSelectorModal: React.FC<Props> = ({ isOpen, onClose }) => {
               type="button"
               onClick={handleUseCurrentLocation}
               disabled={isDetecting}
-              className="px-4 py-2.5 bg-[#34343A] hover:bg-[#202024] text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs disabled:opacity-50"
+              className="px-4 py-2.5 bg-[#A8B88A] hover:bg-[#97A779] text-[#25152F] rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs disabled:opacity-50 border border-[#8C9C6F]"
             >
               <Compass className={`w-3.5 h-3.5 ${isDetecting ? 'animate-spin' : ''}`} />
               <span>{isDetecting ? 'Detecting GPS...' : 'USE MY CURRENT LOCATION'}</span>
@@ -225,25 +225,25 @@ export const LocationSelectorModal: React.FC<Props> = ({ isOpen, onClose }) => {
           {/* Search Locality or Landmark */}
           <div className="space-y-2">
             <div className="relative">
-              <Search className="w-4 h-4 text-[#777781] absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-[#5A4B63] absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search any Tumkur locality, market, street, or landmark (e.g. Kyatsandra, SS Puram, Mandipet, SIT)..."
-                className="w-full pl-10 pr-4 py-2.5 bg-[#F7F7F8] border border-[#E8E8EC] focus:border-[#E8A0B5] rounded-xl text-xs text-[#34343A] placeholder:text-[#777781] focus:outline-none transition-colors"
+                className="w-full pl-10 pr-4 py-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl text-xs text-[#25152F] font-bold placeholder:text-[#5A4B63] focus:outline-none transition-colors"
               />
             </div>
 
             {/* Quick Popular Tumkur Hubs */}
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px]">
-              <span className="text-[#777781] shrink-0 font-medium">Quick Areas:</span>
+              <span className="text-[#5A4B63] shrink-0 font-bold">Quick Areas:</span>
               {tumkurLocations.slice(0, 6).map((loc, idx) => (
                 <button
                   key={idx}
                   type="button"
                   onClick={() => handleSelectArea(loc)}
-                  className="px-2.5 py-1 rounded-full bg-[#F7F7F8] hover:bg-[#FCE8EF] border border-[#E8E8EC] text-[#34343A] shrink-0 transition-colors cursor-pointer"
+                  className="px-2.5 py-1 rounded-full bg-[#F7F2EA] hover:bg-[#EDE6DA] border border-[#DDD4E2] text-[#25152F] font-bold shrink-0 transition-colors cursor-pointer"
                 >
                   {loc.area}
                 </button>

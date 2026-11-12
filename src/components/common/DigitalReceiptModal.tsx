@@ -39,7 +39,7 @@ export const DigitalReceiptModal: React.FC<Props> = ({ booking, onClose }) => {
         {/* Receipt Header Bar */}
         <div className="flex items-center justify-between px-6 py-4 bg-stone-900 text-white shrink-0">
           <div className="flex items-center gap-2">
-            <span className="font-display font-bold text-base tracking-tight text-[#E8A0B5]">ALOOKHAOGE</span>
+            <span className="font-display font-bold text-base tracking-tight text-[#E8A0B5]">ZAIKYA</span>
             <span className="text-xs text-stone-400">· Official Tax Invoice</span>
           </div>
           <div className="flex items-center gap-2">

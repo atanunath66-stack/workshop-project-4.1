@@ -144,11 +144,23 @@ export const RestaurantDetailsPage: React.FC<Props> = ({
   const handlePaymentSuccess = (
     bookingId: string,
     method: string,
-    upiApp?: 'gpay' | 'phonepe' | 'custom_upi'
+    upiApp?: 'gpay' | 'phonepe' | 'custom_upi',
+    verifiedDetails?: { paymentId?: string; orderId?: string }
   ) => {
-    customerPayAdvance(bookingId, method, upiApp);
+    customerPayAdvance(bookingId, method, upiApp, verifiedDetails);
     if (pendingPaymentBooking) {
-      onBookingCreated(pendingPaymentBooking);
+      onBookingCreated({
+        ...pendingPaymentBooking,
+        status: 'CONFIRMED',
+        paymentStatus: 'ADVANCE_PAID',
+        paymentDetails: {
+          transactionId: verifiedDetails?.paymentId,
+          orderId: verifiedDetails?.orderId,
+          amountPaid: pendingPaymentBooking.advanceAmount,
+          paymentMethod: method,
+          status: 'SUCCESS',
+        },
+      });
     }
   };
 
@@ -502,11 +514,11 @@ export const RestaurantDetailsPage: React.FC<Props> = ({
                 {/* Date & Guests */}
                 <div className="grid grid-cols-2 gap-3 text-xs">
                   <div>
-                    <label className="font-semibold text-stone-700 block mb-1">Guests</label>
+                    <label className="font-bold text-[#25152F] block mb-1">Guests</label>
                     <select
                       value={guests}
                       onChange={(e) => setGuests(Number(e.target.value))}
-                      className="w-full p-2 bg-stone-50 border border-stone-200 rounded-xl"
+                      className="w-full p-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl text-xs font-bold text-[#25152F] shadow-2xs"
                     >
                       <option value={1}>1 Person</option>
                       <option value={2}>2 Guests</option>
@@ -516,11 +528,11 @@ export const RestaurantDetailsPage: React.FC<Props> = ({
                     </select>
                   </div>
                   <div>
-                    <label className="font-semibold text-stone-700 block mb-1">Arrival Time</label>
+                    <label className="font-bold text-[#25152F] block mb-1">Arrival Time</label>
                     <select
                       value={arrivalTime}
                       onChange={(e) => setArrivalTime(e.target.value)}
-                      className="w-full p-2 bg-stone-50 border border-stone-200 rounded-xl"
+                      className="w-full p-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl text-xs font-bold text-[#25152F] shadow-2xs"
                     >
                       <option value="In 15 mins">In 15 mins</option>
                       <option value="In 30 mins">In 30 mins</option>
@@ -534,11 +546,11 @@ export const RestaurantDetailsPage: React.FC<Props> = ({
 
                 {/* Seating preference */}
                 <div className="text-xs">
-                  <label className="font-semibold text-stone-700 block mb-1">Seating Preference</label>
+                  <label className="font-bold text-[#25152F] block mb-1">Seating Preference</label>
                   <select
                     value={seating}
                     onChange={(e) => setSeating(e.target.value)}
-                    className="w-full p-2 bg-stone-50 border border-stone-200 rounded-xl"
+                    className="w-full p-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl text-xs font-bold text-[#25152F] shadow-2xs"
                   >
                     <option value="Indoor / Main Counter">Indoor / Main Counter</option>
                     <option value="Outdoor Street Bench">Outdoor Street Bench</option>
@@ -547,21 +559,21 @@ export const RestaurantDetailsPage: React.FC<Props> = ({
                 </div>
 
                 {/* Pre-Ordered Items Summary */}
-                <div className="space-y-2 pt-2 border-t border-stone-100 text-xs">
-                  <div className="flex items-center justify-between font-semibold text-stone-800">
+                <div className="space-y-2 pt-2 border-t border-[#DDD4E2] text-xs">
+                  <div className="flex items-center justify-between font-bold text-[#25152F]">
                     <span>Pre-Ordered Dishes ({cartItemsList.length})</span>
-                    <span className="font-mono">₹{cartSubtotal}</span>
+                    <span className="font-mono text-[#25152F]">₹{cartSubtotal}</span>
                   </div>
 
                   {cartItemsList.length > 0 ? (
                     <div className="space-y-2 max-h-36 overflow-y-auto pr-1">
                       {cartItemsList.map((c) => (
-                        <div key={c.item.id} className="p-2 bg-stone-50 rounded-xl space-y-1">
+                        <div key={c.item.id} className="p-2.5 bg-[#F7F2EA] border border-[#DDD4E2] rounded-xl space-y-1.5">
                           <div className="flex items-center justify-between">
-                            <span className="font-medium text-stone-900 truncate max-w-[140px]">
+                            <span className="font-bold text-[#25152F] truncate max-w-[140px]">
                               {c.item.name}
                             </span>
-                            <span className="font-mono text-stone-600">
+                            <span className="font-mono font-bold text-[#25152F]">
                               {c.quantity} x ₹{c.item.price}
                             </span>
                           </div>
@@ -570,13 +582,13 @@ export const RestaurantDetailsPage: React.FC<Props> = ({
                             placeholder="Special notes (e.g. less spicy)..."
                             value={c.notes}
                             onChange={(e) => updateCartNotes(c.item.id, e.target.value)}
-                            className="w-full px-2 py-1 text-[11px] bg-white border border-stone-200 rounded-lg placeholder:text-stone-400"
+                            className="w-full px-2.5 py-1.5 text-xs bg-white border border-[#DDD4E2] focus:border-[#A8B88A] rounded-lg text-[#25152F] font-bold placeholder:text-[#5A4B63]"
                           />
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-[11px] text-stone-400 italic">
+                    <p className="text-[11px] text-[#5A4B63] italic">
                       No dishes added yet. You can pre-order food to have it ready upon arrival!
                     </p>
                   )}
@@ -584,76 +596,76 @@ export const RestaurantDetailsPage: React.FC<Props> = ({
 
                 {/* Promo Coupon */}
                 <div className="pt-2 text-xs">
-                  <label className="font-semibold text-stone-700 block mb-1">Apply Discount Coupon</label>
+                  <label className="font-bold text-[#25152F] block mb-1">Apply Discount Coupon</label>
                   <div className="flex gap-2">
                     <input
                       type="text"
                       value={discountCode}
                       onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
                       placeholder="e.g. GULLY20"
-                      className="flex-1 px-3 py-1.5 bg-stone-50 border border-stone-200 rounded-xl font-mono uppercase"
+                      className="flex-1 px-3 py-2 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl font-mono font-bold text-[#25152F] uppercase placeholder:text-[#5A4B63]"
                     />
                     <button
                       type="button"
-                      className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-800 font-semibold rounded-xl"
+                      className="px-4 py-2 bg-[#25152F] hover:bg-[#1A0F21] text-white font-bold rounded-xl cursor-pointer transition-colors"
                     >
                       Apply
                     </button>
                   </div>
-                  <div className="text-[10px] text-emerald-700 mt-1 flex items-center gap-1 font-semibold">
-                    <Check className="w-3 h-3" />
+                  <div className="text-[10px] text-emerald-800 mt-1 flex items-center gap-1 font-bold">
+                    <Check className="w-3.5 h-3.5 text-emerald-700" />
                     <span>Coupon GULLY20 applied (20% OFF)</span>
                   </div>
                 </div>
 
                 {/* Advance Payment Option (50% or 100%) */}
-                <div className="space-y-2 pt-2 border-t border-stone-100 text-xs">
-                  <label className="font-semibold text-stone-700 block">Payment Option</label>
+                <div className="space-y-2 pt-2 border-t border-[#DDD4E2] text-xs">
+                  <label className="font-bold text-[#25152F] block">Payment Option</label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => setAdvancePercent(50)}
-                      className={`p-2 rounded-xl border text-center font-semibold transition-all cursor-pointer ${
+                      className={`p-2.5 rounded-xl border-2 text-center font-bold transition-all cursor-pointer ${
                         advancePercent === 50
-                          ? 'border-stone-900 bg-[#FCE8EF] text-stone-900'
-                          : 'border-[#E8E8EC] text-stone-600'
+                          ? 'border-[#25152F] bg-[#F7F2EA] text-[#25152F] shadow-xs'
+                          : 'border-[#DDD4E2] bg-white text-[#5A4B63] hover:text-[#25152F]'
                       }`}
                     >
                       <div>50% Advance</div>
-                      <div className="text-[10px] text-stone-500 font-normal">Pay rest at venue</div>
+                      <div className="text-[10px] text-[#5A4B63] font-normal">Pay rest at venue</div>
                     </button>
                     <button
                       type="button"
                       onClick={() => setAdvancePercent(100)}
-                      className={`p-2 rounded-xl border text-center font-semibold transition-all cursor-pointer ${
+                      className={`p-2.5 rounded-xl border-2 text-center font-bold transition-all cursor-pointer ${
                         advancePercent === 100
-                          ? 'border-stone-900 bg-[#FCE8EF] text-stone-900'
-                          : 'border-[#E8E8EC] text-stone-600'
+                          ? 'border-[#25152F] bg-[#F7F2EA] text-[#25152F] shadow-xs'
+                          : 'border-[#DDD4E2] bg-white text-[#5A4B63] hover:text-[#25152F]'
                       }`}
                     >
                       <div>100% Full</div>
-                      <div className="text-[10px] text-stone-500 font-normal">Cashless visit</div>
+                      <div className="text-[10px] text-[#5A4B63] font-normal">Cashless visit</div>
                     </button>
                   </div>
                 </div>
 
                 {/* Upfront Cancellation Policy Notice */}
-                <div className="p-3 bg-[#FCE8EF]/40 rounded-2xl border border-[#E8A0B5]/40 text-[11px] text-stone-800 space-y-1">
-                  <div className="flex items-center gap-1.5 font-bold text-[#34343A]">
-                    <ShieldAlert className="w-3.5 h-3.5 text-[#C96884] shrink-0" />
+                <div className="p-3 bg-[#F7F2EA] rounded-2xl border border-[#DDD4E2] text-[11px] text-[#25152F] space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold text-[#25152F]">
+                    <ShieldAlert className="w-3.5 h-3.5 text-[#B96D79] shrink-0" />
                     <span>Cancellation Policy</span>
                   </div>
-                  <p className="text-stone-600">{policy.termsText}</p>
+                  <p className="text-[#5A4B63] leading-relaxed">{policy.termsText}</p>
                 </div>
 
                 {/* Primary CTA */}
                 <button
                   type="button"
                   onClick={handleProceedToBooking}
-                  className="w-full py-3 px-4 bg-[#34343A] hover:bg-[#232328] text-white rounded-2xl font-bold text-xs transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-3.5 px-4 bg-[#A8B88A] hover:bg-[#97A779] text-[#25152F] rounded-2xl font-bold text-xs transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer border border-[#8C9C6F]"
                 >
-                  <span>Request Booking & Pay Advance</span>
-                  <ChevronRight className="w-4 h-4 text-[#E8A0B5]" />
+                  <span>Request Booking &amp; Pay Advance</span>
+                  <ChevronRight className="w-4 h-4 text-[#25152F]" />
                 </button>
               </div>
             </div>

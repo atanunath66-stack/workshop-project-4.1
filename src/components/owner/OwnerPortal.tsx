@@ -317,78 +317,78 @@ export const OwnerPortal: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="font-semibold text-stone-700 block mb-1">Restaurant / Stall Name *</label>
+                  <label className="font-bold text-[#25152F] block mb-1">Restaurant / Stall Name *</label>
                   <input
                     type="text"
                     required
                     value={regName}
                     onChange={(e) => setRegName(e.target.value)}
                     placeholder="e.g. Calcutta Kati Roll Corner"
-                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl font-medium"
+                    className="w-full p-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl font-bold text-[#25152F]"
                   />
                 </div>
 
                 <div>
-                  <label className="font-semibold text-stone-700 block mb-1">Tagline / Specialties</label>
+                  <label className="font-bold text-[#25152F] block mb-1">Tagline / Specialties</label>
                   <input
                     type="text"
                     value={regTagline}
                     onChange={(e) => setRegTagline(e.target.value)}
                     placeholder="e.g. Charcoal grilled double chicken rolls"
-                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl font-medium"
+                    className="w-full p-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl font-bold text-[#25152F]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="font-semibold text-stone-700 block mb-1">About Your Food & Heritage</label>
+                <label className="font-bold text-[#25152F] block mb-1">About Your Food & Heritage</label>
                 <textarea
                   rows={2}
                   value={regDesc}
                   onChange={(e) => setRegDesc(e.target.value)}
                   placeholder="Tell foodies how long you have been serving, specialty ingredients..."
-                  className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl"
+                  className="w-full p-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl font-bold text-[#25152F]"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="font-semibold text-stone-700 block mb-1">Owner Name *</label>
+                  <label className="font-bold text-[#25152F] block mb-1">Owner Name *</label>
                   <input
                     type="text"
                     required
                     value={regOwnerName}
                     onChange={(e) => setRegOwnerName(e.target.value)}
-                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl"
+                    className="w-full p-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl font-bold text-[#25152F]"
                   />
                 </div>
                 <div>
-                  <label className="font-semibold text-stone-700 block mb-1">Contact Phone *</label>
+                  <label className="font-bold text-[#25152F] block mb-1">Contact Phone *</label>
                   <input
                     type="tel"
                     required
                     value={regPhone}
                     onChange={(e) => setRegPhone(e.target.value)}
-                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl"
+                    className="w-full p-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl font-bold text-[#25152F]"
                   />
                 </div>
                 <div>
-                  <label className="font-semibold text-stone-700 block mb-1">Email *</label>
+                  <label className="font-bold text-[#25152F] block mb-1">Email *</label>
                   <input
                     type="email"
                     required
                     value={regEmail}
                     onChange={(e) => setRegEmail(e.target.value)}
-                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl"
+                    className="w-full p-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl font-bold text-[#25152F]"
                   />
                 </div>
               </div>
 
               {/* Shop Owner UPI ID for Direct Payouts */}
-              <div className="p-4 bg-[#FCE8EF]/40 rounded-2xl border border-[#E8A0B5]/40 space-y-2">
+              <div className="p-4 bg-[#F7F2EA] rounded-2xl border-2 border-[#DDD4E2] space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="font-bold text-stone-900 text-xs flex items-center gap-1.5">
-                    <Smartphone className="w-4 h-4 text-[#C96884]" />
+                  <label className="font-bold text-[#25152F] text-xs flex items-center gap-1.5">
+                    <Smartphone className="w-4 h-4 text-[#B96D79]" />
                     <span>Shop Owner UPI ID (For Direct Customer Payouts) *</span>
                   </label>
                   <span className="text-[10px] font-bold text-[#238B68] bg-[#238B68]/10 border border-[#238B68]/20 px-2 py-0.5 rounded-full flex items-center gap-1">
@@ -402,7 +402,7 @@ export const OwnerPortal: React.FC = () => {
                   value={regUpiId}
                   onChange={(e) => setRegUpiId(e.target.value)}
                   placeholder="e.g. yourshopname@okhdfcbank or 9822012345@paytm"
-                  className="w-full p-2.5 bg-white border border-[#E8E8EC] rounded-xl font-mono text-xs focus:ring-2 focus:ring-[#E8A0B5]"
+                  className="w-full p-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl font-mono text-xs font-bold text-[#25152F]"
                 />
                 <div className="flex items-center justify-between text-[11px] text-stone-500 pt-0.5">
                   <span className="flex items-center gap-1 text-stone-600">
@@ -421,18 +421,18 @@ export const OwnerPortal: React.FC = () => {
             {/* Step 2: Location and Coordinates */}
             <div className="space-y-4 pt-4 border-t border-stone-100">
               <div className="flex items-center justify-between flex-wrap gap-2">
-                <h2 className="text-sm font-bold font-display uppercase tracking-wider text-stone-900">
+                <h2 className="text-sm font-bold font-display uppercase tracking-wider text-[#25152F]">
                   2. Location & Map Coordinates
                 </h2>
-                <span className="text-[11px] text-[#34343A] bg-[#FCE8EF] border border-[#E8A0B5]/40 px-2.5 py-0.5 rounded-full font-semibold">
+                <span className="text-[11px] text-[#25152F] bg-[#E9D8B5] border border-[#DDD4E2] px-2.5 py-0.5 rounded-full font-bold">
                   Karnataka Statewide Support
                 </span>
               </div>
 
               {/* Quick Preset Buttons for Karnataka Hubs including Tumakuru */}
-              <div className="p-3 bg-stone-50 border border-[#E8E8EC] rounded-2xl space-y-2">
-                <div className="text-[11px] font-bold text-stone-700 flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-[#C96884]" />
+              <div className="p-3 bg-stone-50 border border-[#DDD4E2] rounded-2xl space-y-2">
+                <div className="text-[11px] font-bold text-[#25152F] flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-[#B96D79]" />
                   <span>Quick Pick Karnataka Food Hub (Auto-fills Coordinates):</span>
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5">
@@ -458,7 +458,7 @@ export const OwnerPortal: React.FC = () => {
                         setRegLat(preset.lat);
                         setRegLng(preset.lng);
                       }}
-                      className="px-2 py-1 bg-white hover:bg-[#FCE8EF]/50 hover:border-[#E8A0B5] border border-[#E8E8EC] rounded-lg text-[10px] font-semibold text-stone-700 transition-colors cursor-pointer"
+                      className="px-2.5 py-1 bg-white hover:bg-[#F7F2EA] hover:border-[#A8B88A] border border-[#DDD4E2] rounded-lg text-[10px] font-bold text-[#25152F] transition-colors cursor-pointer"
                     >
                       {preset.label}
                     </button>
@@ -468,18 +468,18 @@ export const OwnerPortal: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="sm:col-span-2">
-                  <label className="font-semibold text-stone-700 block mb-1">Complete Street Address *</label>
+                  <label className="font-bold text-[#25152F] block mb-1">Complete Street Address *</label>
                   <input
                     type="text"
                     required
                     value={regAddress}
                     onChange={(e) => setRegAddress(e.target.value)}
                     placeholder="Shop number, Street, Landmark (e.g. NH 48, Kyatsandra Circle)"
-                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl"
+                    className="w-full p-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl font-bold text-[#25152F]"
                   />
                 </div>
                 <div>
-                  <label className="font-semibold text-stone-700 block mb-1">Neighborhood Area *</label>
+                  <label className="font-bold text-[#25152F] block mb-1">Neighborhood Area *</label>
                   <input
                     type="text"
                     required
@@ -487,7 +487,7 @@ export const OwnerPortal: React.FC = () => {
                     value={regArea}
                     onChange={(e) => setRegArea(e.target.value)}
                     placeholder="e.g. Kyatsandra / Koramangala"
-                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl"
+                    className="w-full p-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl font-bold text-[#25152F]"
                   />
                   <datalist id="karnataka-area-list">
                     {KARNATAKA_LOCATIONS.map((l) => (
@@ -501,7 +501,7 @@ export const OwnerPortal: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="font-semibold text-stone-700 block mb-1">City / District *</label>
+                  <label className="font-bold text-[#25152F] block mb-1">City / District *</label>
                   <input
                     type="text"
                     required
@@ -509,7 +509,7 @@ export const OwnerPortal: React.FC = () => {
                     value={regCity}
                     onChange={(e) => setRegCity(e.target.value)}
                     placeholder="e.g. Tumakuru (Tumkur) / Bengaluru"
-                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl"
+                    className="w-full p-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl font-bold text-[#25152F]"
                   />
                   <datalist id="karnataka-city-list">
                     {Array.from(new Set(KARNATAKA_LOCATIONS.map((l) => l.city))).map((city) => (
@@ -518,23 +518,23 @@ export const OwnerPortal: React.FC = () => {
                   </datalist>
                 </div>
                 <div>
-                  <label className="font-semibold text-stone-700 block mb-1">Latitude Coordinate</label>
+                  <label className="font-bold text-[#25152F] block mb-1">Latitude Coordinate</label>
                   <input
                     type="number"
                     step="0.0001"
                     value={regLat}
                     onChange={(e) => setRegLat(Number(e.target.value))}
-                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl font-mono"
+                    className="w-full p-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl font-mono font-bold text-[#25152F]"
                   />
                 </div>
                 <div>
-                  <label className="font-semibold text-stone-700 block mb-1">Longitude Coordinate</label>
+                  <label className="font-bold text-[#25152F] block mb-1">Longitude Coordinate</label>
                   <input
                     type="number"
                     step="0.0001"
                     value={regLng}
                     onChange={(e) => setRegLng(Number(e.target.value))}
-                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl font-mono"
+                    className="w-full p-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl font-mono font-bold text-[#25152F]"
                   />
                 </div>
               </div>
@@ -542,86 +542,86 @@ export const OwnerPortal: React.FC = () => {
 
             {/* Step 3: Photos and Timings */}
             <div className="space-y-4 pt-4 border-t border-stone-100">
-              <h2 className="text-sm font-bold font-display uppercase tracking-wider text-stone-900">
+              <h2 className="text-sm font-bold font-display uppercase tracking-wider text-[#25152F]">
                 3. Operations & Photos
               </h2>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="font-semibold text-stone-700 block mb-1">Opening Time</label>
+                  <label className="font-bold text-[#25152F] block mb-1">Opening Time</label>
                   <input
                     type="text"
                     value={regOpeningTime}
                     onChange={(e) => setRegOpeningTime(e.target.value)}
-                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl"
+                    className="w-full p-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl font-bold text-[#25152F]"
                   />
                 </div>
                 <div>
-                  <label className="font-semibold text-stone-700 block mb-1">Closing Time</label>
+                  <label className="font-bold text-[#25152F] block mb-1">Closing Time</label>
                   <input
                     type="text"
                     value={regClosingTime}
                     onChange={(e) => setRegClosingTime(e.target.value)}
-                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl"
+                    className="w-full p-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl font-bold text-[#25152F]"
                   />
                 </div>
                 <div>
-                  <label className="font-semibold text-stone-700 block mb-1">Approx. Price for Two (₹)</label>
+                  <label className="font-bold text-[#25152F] block mb-1">Approx. Price for Two (₹)</label>
                   <input
                     type="number"
                     value={regPriceForTwo}
                     onChange={(e) => setRegPriceForTwo(Number(e.target.value))}
-                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl font-mono"
+                    className="w-full p-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl font-mono font-bold text-[#25152F]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="font-semibold text-stone-700 block mb-1">Cover Image Photo URL</label>
+                <label className="font-bold text-[#25152F] block mb-1">Cover Image Photo URL</label>
                 <input
                   type="text"
                   value={regCoverImage}
                   onChange={(e) => setRegCoverImage(e.target.value)}
                   placeholder="/src/assets/images/street_food_chaat_1794251514362.jpg"
-                  className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl font-mono text-[11px]"
+                  className="w-full p-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl font-mono text-xs font-bold text-[#25152F]"
                 />
               </div>
             </div>
 
             {/* Step 4: Initial Signature Dish */}
             <div className="space-y-4 pt-4 border-t border-stone-100">
-              <h2 className="text-sm font-bold font-display uppercase tracking-wider text-stone-900">
+              <h2 className="text-sm font-bold font-display uppercase tracking-wider text-[#25152F]">
                 4. Add Your First Signature Dish
               </h2>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="font-semibold text-stone-700 block mb-1">Dish Name *</label>
+                  <label className="font-bold text-[#25152F] block mb-1">Dish Name *</label>
                   <input
                     type="text"
                     required
                     value={initialDishName}
                     onChange={(e) => setInitialDishName(e.target.value)}
-                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl"
+                    className="w-full p-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl font-bold text-[#25152F]"
                   />
                 </div>
                 <div>
-                  <label className="font-semibold text-stone-700 block mb-1">Dish Price (₹) *</label>
+                  <label className="font-bold text-[#25152F] block mb-1">Dish Price (₹) *</label>
                   <input
                     type="number"
                     required
                     value={initialDishPrice}
                     onChange={(e) => setInitialDishPrice(Number(e.target.value))}
-                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl font-mono"
+                    className="w-full p-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl font-mono font-bold text-[#25152F]"
                   />
                 </div>
                 <div>
-                  <label className="font-semibold text-stone-700 block mb-1">Prep Time (Mins)</label>
+                  <label className="font-bold text-[#25152F] block mb-1">Prep Time (Mins)</label>
                   <input
                     type="number"
                     value={initialDishPrep}
                     onChange={(e) => setInitialDishPrep(Number(e.target.value))}
-                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl font-mono"
+                    className="w-full p-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl font-mono font-bold text-[#25152F]"
                   />
                 </div>
               </div>
@@ -630,10 +630,10 @@ export const OwnerPortal: React.FC = () => {
             <button
               type="submit"
               disabled={isSubmittingReg}
-              className="w-full py-3.5 px-6 bg-[#34343A] hover:bg-[#232328] text-white rounded-2xl font-bold text-sm transition-all shadow-md flex items-center justify-center gap-2 mt-4 cursor-pointer disabled:opacity-50"
+              className="w-full py-3.5 px-6 bg-[#A8B88A] hover:bg-[#97A779] text-[#25152F] rounded-2xl font-bold text-sm transition-all shadow-md flex items-center justify-center gap-2 mt-4 cursor-pointer disabled:opacity-50"
             >
               <span>{isSubmittingReg ? 'Saving Restaurant to Cloud Firestore...' : 'Submit Restaurant for Admin Verification'}</span>
-              <ArrowRight className="w-4 h-4 text-[#E8A0B5]" />
+              <ArrowRight className="w-4 h-4 text-[#25152F]" />
             </button>
           </form>
         </div>
@@ -1148,7 +1148,7 @@ export const OwnerPortal: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-4 text-xs">
               <div>
-                <label className="font-bold text-stone-800 block mb-1">
+                <label className="font-bold text-[#25152F] block mb-1">
                   {policyType === 'fixed' ? 'Fixed Deduction Amount (₹)' : 'Deduction Percentage (%)'}
                 </label>
                 <input
@@ -1157,12 +1157,12 @@ export const OwnerPortal: React.FC = () => {
                   max={policyType === 'fixed' ? 200 : 50}
                   value={deductionValue}
                   onChange={(e) => setDeductionValue(Number(e.target.value))}
-                  className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl font-bold font-mono"
+                  className="w-full p-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl font-bold font-mono text-[#25152F]"
                 />
               </div>
 
               <div>
-                <label className="font-bold text-stone-800 block mb-1">
+                <label className="font-bold text-[#25152F] block mb-1">
                   Minimum Charge Floor (₹)
                 </label>
                 <input
@@ -1171,19 +1171,19 @@ export const OwnerPortal: React.FC = () => {
                   max={100}
                   value={minCharge}
                   onChange={(e) => setMinCharge(Number(e.target.value))}
-                  className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl font-bold font-mono"
+                  className="w-full p-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl font-bold font-mono text-[#25152F]"
                 />
               </div>
             </div>
 
             <div className="text-xs">
-              <label className="font-bold text-stone-800 block mb-1">
+              <label className="font-bold text-[#25152F] block mb-1">
                 Free Cancellation Deadline Window (Minutes Before Arrival)
               </label>
               <select
                 value={deadlineMinutes}
                 onChange={(e) => setDeadlineMinutes(Number(e.target.value))}
-                className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl font-medium"
+                className="w-full p-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl font-bold text-[#25152F]"
               >
                 <option value={15}>15 Minutes Before (Recommended for street stalls)</option>
                 <option value={20}>20 Minutes Before</option>
@@ -1194,9 +1194,9 @@ export const OwnerPortal: React.FC = () => {
 
             <button
               type="submit"
-              className="px-6 py-2.5 bg-[#34343A] hover:bg-[#232328] text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-2 cursor-pointer"
+              className="px-6 py-2.5 bg-[#A8B88A] hover:bg-[#97A779] text-[#25152F] rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-2 cursor-pointer"
             >
-              <Save className="w-4 h-4 text-[#E8A0B5]" />
+              <Save className="w-4 h-4 text-[#25152F]" />
               <span>Save Cancellation Policy</span>
             </button>
           </form>
@@ -1292,7 +1292,7 @@ export const OwnerPortal: React.FC = () => {
                     value={editingUpiId}
                     onChange={(e) => setEditingUpiId(e.target.value)}
                     placeholder="e.g. yourbusiness@okhdfcbank"
-                    className="flex-1 p-2 bg-stone-50 border border-stone-200 rounded-xl font-mono text-xs focus:ring-2 focus:ring-[#E8A0B5]"
+                    className="flex-1 p-2 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl font-mono text-xs font-bold text-[#25152F]"
                   />
                   <div className="flex items-center gap-2">
                     <button
@@ -1307,7 +1307,7 @@ export const OwnerPortal: React.FC = () => {
                           setTimeout(() => setUpiSavedSuccess(false), 4000);
                         }
                       }}
-                      className="px-4 py-2 bg-[#34343A] hover:bg-[#232328] text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer"
+                      className="px-4 py-2 bg-[#A8B88A] hover:bg-[#97A779] text-[#25152F] rounded-xl text-xs font-bold shadow-xs cursor-pointer"
                     >
                       Save Payout UPI
                     </button>
@@ -1409,53 +1409,53 @@ export const OwnerPortal: React.FC = () => {
       {showAddItemModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
           <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-stone-200 p-6 space-y-4">
-            <h3 className="text-base font-bold font-display text-stone-900">Add Dish to Menu</h3>
+            <h3 className="text-base font-bold font-display text-[#25152F]">Add Dish to Menu</h3>
             <form onSubmit={handleCreateMenuItem} className="space-y-3 text-xs">
               <div>
-                <label className="font-semibold text-stone-700 block mb-1">Dish Name</label>
+                <label className="font-bold text-[#25152F] block mb-1">Dish Name</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Paneer Tikka Kathi Roll"
                   value={newItemName}
                   onChange={(e) => setNewItemName(e.target.value)}
-                  className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl"
+                  className="w-full p-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl font-bold text-[#25152F]"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-semibold text-stone-700 block mb-1">Price (₹)</label>
+                  <label className="font-bold text-[#25152F] block mb-1">Price (₹)</label>
                   <input
                     type="number"
                     required
                     min={10}
                     value={newItemPrice}
                     onChange={(e) => setNewItemPrice(Number(e.target.value))}
-                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl font-mono"
+                    className="w-full p-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl font-mono font-bold text-[#25152F]"
                   />
                 </div>
                 <div>
-                  <label className="font-semibold text-stone-700 block mb-1">Prep Time (Mins)</label>
+                  <label className="font-bold text-[#25152F] block mb-1">Prep Time (Mins)</label>
                   <input
                     type="number"
                     required
                     min={2}
                     value={newItemPrepTime}
                     onChange={(e) => setNewItemPrepTime(Number(e.target.value))}
-                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl font-mono"
+                    className="w-full p-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl font-mono font-bold text-[#25152F]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="font-semibold text-stone-700 block mb-1">Description</label>
+                <label className="font-bold text-[#25152F] block mb-1">Description</label>
                 <textarea
                   rows={2}
                   placeholder="Ingredients, spice level, chutney pairings..."
                   value={newItemDesc}
                   onChange={(e) => setNewItemDesc(e.target.value)}
-                  className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl"
+                  className="w-full p-2.5 bg-white border-2 border-[#DDD4E2] focus:border-[#A8B88A] rounded-xl font-bold text-[#25152F]"
                 />
               </div>
 
@@ -1467,21 +1467,21 @@ export const OwnerPortal: React.FC = () => {
                     onChange={(e) => setNewItemIsVeg(e.target.checked)}
                     className="rounded text-emerald-600 w-4 h-4"
                   />
-                  <span className="font-semibold text-stone-700">Vegetarian Dish</span>
+                  <span className="font-bold text-[#25152F]">Vegetarian Dish</span>
                 </label>
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-stone-100">
+              <div className="flex justify-end gap-2 pt-2 border-t border-[#DDD4E2]">
                 <button
                   type="button"
                   onClick={() => setShowAddItemModal(false)}
-                  className="px-4 py-2 border border-stone-200 rounded-xl text-xs font-semibold text-stone-600"
+                  className="px-4 py-2 border border-[#DDD4E2] hover:bg-stone-50 rounded-xl text-xs font-bold text-stone-700"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-[#34343A] hover:bg-[#232328] text-white rounded-xl text-xs font-bold cursor-pointer"
+                  className="px-4 py-2 bg-[#A8B88A] hover:bg-[#97A779] text-[#25152F] rounded-xl text-xs font-bold cursor-pointer shadow-xs"
                 >
                   Add Dish
                 </button>

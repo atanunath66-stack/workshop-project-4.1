@@ -2,25 +2,30 @@
 
 @layer base {
   :root {
+    /* ZAikya Midnight Garden Theme Tokens */
+    --midnight-plum: #25152F;
+    --pistachio: #A8B88A;
+    --champagne: #E9D8B5;
+    --warm-ivory: #F7F2EA;
+    --dusty-rose: #B96D79;
+    
+    /* Semantic Colors */
     --bg-primary: #0A0C0E;
     --bg-surface: #121519;
     --bg-card: #181C22;
-    --primary-accent: #E8A0B5;
-    --primary-accent-hover: #F43F5E;
-    --emerald-accent: #10B981;
-    --emerald-subtle: #064E3B;
-    --pink-subtle: #831843;
-    --light-pink: #FCE8EF;
-    --text-primary: #F3F4F6;
-    --text-muted: #9CA3AF;
-    --border-color: #272C35;
-    --color-success: #10B981;
+    --primary-accent: #B96D79;
+    --primary-accent-hover: #D98592;
+    --emerald-accent: #A8B88A;
+    --text-primary: #F7F2EA;
+    --text-muted: #A89EB0;
+    --border-color: #3F3348;
+    --color-success: #A8B88A;
     --color-error: #F43F5E;
   }
 
   body {
     background-color: #0A0C0E;
-    color: #F3F4F6;
+    color: #F7F2EA;
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
@@ -29,18 +34,92 @@
     font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
     letter-spacing: -0.02em;
   }
+
+  /* Universal High-Contrast Input Discipline:
+     Ensures all typed text is crisp, bold, dark Midnight Plum on light surfaces
+     with distinct high-contrast placeholders and focus rings */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]),
+  textarea,
+  select {
+    color: #25152F;
+    caret-color: #25152F;
+    font-weight: 500;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: #5A4B63 !important;
+    opacity: 1 !important;
+    font-weight: 400;
+  }
+
+  /* Specific high-contrast override for inputs on dark surfaces */
+  input.bg-stone-900,
+  input.bg-stone-800,
+  input.bg-\[\#121519\],
+  input.bg-\[\#181C22\],
+  input.bg-\[\#0A0C0E\],
+  textarea.bg-stone-900,
+  textarea.bg-stone-800,
+  select.bg-stone-900,
+  select.bg-stone-800 {
+    color: #F7F2EA !important;
+    caret-color: #A8B88A !important;
+    border-color: #3F3348 !important;
+  }
+
+  input.bg-stone-900::placeholder,
+  input.bg-stone-800::placeholder,
+  input.bg-\[\#181C22\]::placeholder {
+    color: #A89EB0 !important;
+  }
+
+  /* Universal visible focus indicators for accessibility and keyboard navigation */
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: none !important;
+    border-color: #A8B88A !important;
+    box-shadow: 0 0 0 2px rgba(168, 184, 138, 0.45) !important;
+  }
+
+  button:focus-visible {
+    outline: 2px solid #A8B88A !important;
+    outline-offset: 2px !important;
+  }
 }
 
-/* Atmospheric Green-Pink-Black Ambient Background */
+/* Midnight Garden Design System Utilities */
+.bg-midnight-plum { background-color: #25152F; }
+.text-midnight-plum { color: #25152F; }
+.border-midnight-plum { border-color: #25152F; }
+
+.bg-pistachio { background-color: #A8B88A; }
+.text-pistachio { color: #A8B88A; }
+.border-pistachio { border-color: #A8B88A; }
+
+.bg-champagne { background-color: #E9D8B5; }
+.text-champagne { color: #E9D8B5; }
+.border-champagne { border-color: #E9D8B5; }
+
+.bg-warm-ivory { background-color: #F7F2EA; }
+.text-warm-ivory { color: #F7F2EA; }
+.border-warm-ivory { border-color: #F7F2EA; }
+
+.bg-dusty-rose { background-color: #B96D79; }
+.text-dusty-rose { color: #B96D79; }
+.border-dusty-rose { border-color: #B96D79; }
+
+/* Atmospheric Ambient Background */
 .bg-zaikya-ambient {
   background-color: #0A0C0E;
   background-image: 
-    radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.12) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(244, 63, 94, 0.10) 0px, transparent 50%),
-    radial-gradient(at 50% 100%, rgba(5, 150, 105, 0.08) 0px, transparent 60%);
+    radial-gradient(at 0% 0%, rgba(168, 184, 138, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(185, 109, 121, 0.14) 0px, transparent 50%),
+    radial-gradient(at 50% 100%, rgba(37, 21, 47, 0.50) 0px, transparent 60%);
 }
 
-/* Custom scrollbar in dark theme with pink & emerald hints */
+/* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -49,14 +128,14 @@
   background: #0A0C0E;
 }
 ::-webkit-scrollbar-thumb {
-  background: #272C35;
+  background: #3F3348;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #E8A0B5;
+  background: #A8B88A;
 }
 
-/* Hide scrollbar for horizontal chip bars */
+/* Hide scrollbar for horizontal chips */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
