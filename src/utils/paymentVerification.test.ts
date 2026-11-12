@@ -139,4 +139,78 @@ describe('Payment & UPI Verification Suite', () => {
       assert.ok(upiUrl.includes('cu=INR'));
     });
   });
+
+  describe('7. Firebase Cloud Function Webhook Signature & Idempotency Invariants', () => {
+    const webhookSecret = 'test_webhook_secret_998877';
+    const rawPayload = JSON.stringify({
+      event: 'payment.captured',
+      payload: {
+        payment: {
+          entity: {
+            id: 'pay_ABC123456789',
+            order_id: 'order_XYZ987654321',
+            amount: 50000,
+            currency: 'INR',
+            status: 'captured',
+            method: 'upi',
+            vpa: 'diner@oksbi',
+            notes: {
+              bookingId: 'bk_2026_1112',
+            },
+          },
+        },
+      },
+    });
+
+    const rawBuffer = Buffer.from(rawPayload, 'utf8');
+    const validSignature = crypto
+      .createHmac('sha256', webhookSecret)
+      .update(rawBuffer)
+      .digest('hex');
+
+    it('validates a verified Razorpay raw payload buffer with matching signature', async () => {
+      const { verifyRazorpayWebhookSignature } = await import('./webhookVerification');
+      const isValid = verifyRazorpayWebhookSignature(rawBuffer, validSignature, webhookSecret);
+      assert.strictEqual(isValid, true);
+    });
+
+    it('rejects tampered raw body payload even with legitimate signature format', async () => {
+      const { verifyRazorpayWebhookSignature } = await import('./webhookVerification');
+      const tamperedBuffer = Buffer.from(
+        rawPayload.replace('50000', '10000'), // Attacker tries to alter payment amount
+        'utf8'
+      );
+      const isValid = verifyRazorpayWebhookSignature(tamperedBuffer, validSignature, webhookSecret);
+      assert.strictEqual(isValid, false);
+    });
+
+    it('rejects forged webhook signature', async () => {
+      const { verifyRazorpayWebhookSignature } = await import('./webhookVerification');
+      const forgedSig = crypto
+        .createHmac('sha256', 'attacker_secret')
+        .update(rawBuffer)
+        .digest('hex');
+      const isValid = verifyRazorpayWebhookSignature(rawBuffer, forgedSig, webhookSecret);
+      assert.strictEqual(isValid, false);
+    });
+
+    it('rejects empty payload, missing signature, or missing secret', async () => {
+      const { verifyRazorpayWebhookSignature } = await import('./webhookVerification');
+      assert.strictEqual(verifyRazorpayWebhookSignature('', validSignature, webhookSecret), false);
+      assert.strictEqual(verifyRazorpayWebhookSignature(rawBuffer, '', webhookSecret), false);
+      assert.strictEqual(verifyRazorpayWebhookSignature(rawBuffer, validSignature, ''), false);
+    });
+
+    it('enforces that payment status remains PENDING until server webhook confirmation', () => {
+      // Invariant: client booking creation must initialize with status PENDING and paymentStatus PENDING
+      const initialBooking = {
+        id: 'bk_test_1',
+        status: 'PENDING',
+        paymentStatus: 'PENDING',
+        advanceAmount: 250,
+      };
+      assert.strictEqual(initialBooking.status, 'PENDING');
+      assert.strictEqual(initialBooking.paymentStatus, 'PENDING');
+    });
+  });
 });

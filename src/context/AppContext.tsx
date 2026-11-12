@@ -1665,42 +1665,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const commission = Math.round(advancePaid * 0.02);
           const merchantShare = advancePaid - commission;
 
+          // Security Invariant: Never trust frontend payment success responses.
+          // Keep payment status PENDING until verified by the trusted server webhook.
+          const isAlreadyPaid = b.paymentStatus === 'ADVANCE_PAID';
           const updated: Booking = {
             ...b,
-            status: 'CONFIRMED',
-            paymentStatus: 'ADVANCE_PAID',
+            status: isAlreadyPaid ? 'CONFIRMED' : b.status,
+            paymentStatus: isAlreadyPaid ? 'ADVANCE_PAID' : 'PENDING',
             paymentMethod: method,
             upiApp,
             adminPlatformCommission: commission,
             merchantPayoutAmount: merchantShare,
             paymentDetails: {
-              transactionId: verifiedDetails?.paymentId || `TXN_${Date.now()}`,
+              transactionId: verifiedDetails?.paymentId,
               orderId: verifiedDetails?.orderId,
               amountPaid: advancePaid,
               paymentMethod: method,
-              status: 'SUCCESS',
+              status: isAlreadyPaid ? 'SUCCESS' : 'PENDING',
             },
             updatedAt: new Date().toISOString(),
           };
-
-          try {
-            updateDoc(doc(db, 'bookings', bookingId), {
-              status: 'CONFIRMED',
-              paymentStatus: 'ADVANCE_PAID',
-              paymentMethod: method,
-              upiApp,
-              adminPlatformCommission: commission,
-              merchantPayoutAmount: merchantShare,
-              paymentDetails: {
-                transactionId: verifiedDetails?.paymentId || `TXN_${Date.now()}`,
-                orderId: verifiedDetails?.orderId || '',
-                amountPaid: advancePaid,
-                paymentMethod: method,
-                status: 'SUCCESS',
-              },
-              updatedAt: new Date().toISOString(),
-            }).catch(() => {});
-          } catch {}
 
           return updated;
         }

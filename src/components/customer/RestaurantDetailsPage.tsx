@@ -151,14 +151,14 @@ export const RestaurantDetailsPage: React.FC<Props> = ({
     if (pendingPaymentBooking) {
       onBookingCreated({
         ...pendingPaymentBooking,
-        status: 'CONFIRMED',
-        paymentStatus: 'ADVANCE_PAID',
+        status: 'PENDING',
+        paymentStatus: 'PENDING',
         paymentDetails: {
           transactionId: verifiedDetails?.paymentId,
           orderId: verifiedDetails?.orderId,
           amountPaid: pendingPaymentBooking.advanceAmount,
           paymentMethod: method,
-          status: 'SUCCESS',
+          status: 'PENDING',
         },
       });
     }

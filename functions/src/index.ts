@@ -80,7 +80,10 @@ export const razorpayWebhook = onRequest(
     }
 
     // 4. Extract raw request body
-    const rawBody = req.rawBody;
+    const rawBody: Buffer | null =
+      (req as any).rawBody ||
+      (Buffer.isBuffer(req.body) ? req.body : null) ||
+      (typeof req.body === 'string' ? Buffer.from(req.body) : null);
     if (!rawBody || rawBody.length === 0) {
       logger.warn('[Razorpay Webhook] Empty raw request body received.');
       res.status(400).json({ error: 'Empty request payload.' });

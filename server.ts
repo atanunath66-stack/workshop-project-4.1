@@ -1,4 +1,5 @@
-import express, { Request, Response } from 'express';
+import express from 'express';
+import type { Request, Response } from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -6,6 +7,7 @@ import crypto from 'crypto';
 import dotenv from 'dotenv';
 import Razorpay from 'razorpay';
 import QRCode from 'qrcode';
+import { verifyRazorpayWebhookSignature } from './src/utils/webhookVerification.ts';
 
 dotenv.config();
 
@@ -281,15 +283,13 @@ async function startServer() {
       }
 
       // Verify webhook HMAC signature using timing-safe comparison
-      const expectedWebhookSig = crypto
-        .createHmac('sha256', RAZORPAY_WEBHOOK_SECRET)
-        .update(rawBody)
-        .digest('hex');
+      const isValidSignature = verifyRazorpayWebhookSignature(
+        rawBody,
+        String(webhookSignature),
+        RAZORPAY_WEBHOOK_SECRET
+      );
 
-      const expectedBuf = Buffer.from(expectedWebhookSig, 'utf8');
-      const actualBuf = Buffer.from(String(webhookSignature), 'utf8');
-
-      if (expectedBuf.length !== actualBuf.length || !crypto.timingSafeEqual(expectedBuf, actualBuf)) {
+      if (!isValidSignature) {
         console.warn('[Payment Webhook] Webhook signature verification failed');
         return res.status(400).json({ error: 'Invalid webhook signature' });
       }
